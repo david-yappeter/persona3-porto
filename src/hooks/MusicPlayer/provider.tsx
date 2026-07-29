@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { TRACKS, type Track } from '../../data/tracks'
 import { MusicPlayerContext, type MusicPlayerValue } from './context'
+import { PLAYBACK_CONTROL_SELECTOR } from './playbackControl'
 
 type MusicPlayerProviderProps = {
   children: ReactNode
@@ -147,19 +148,34 @@ export const MusicPlayerProvider = ({ children, tracks = TRACKS }: MusicPlayerPr
     const GESTURES = ['pointerdown', 'keydown', 'touchstart', 'wheel'] as const
     let settled = false
 
+    const attach = () => {
+      for (const type of GESTURES) window.addEventListener(type, start)
+    }
     const detach = () => {
       for (const type of GESTURES) window.removeEventListener(type, start)
     }
 
-    function start() {
+    function start(event: Event) {
       if (settled) return
-      void audio!
-        .play()
-        .then(() => {
-          settled = true
-          detach()
-        })
-        .catch(() => {})
+
+      /*
+       * Skip controls that drive playback themselves. play() flips `paused` to
+       * false synchronously, so without this a single click on the play button
+       * runs both paths: this fallback starts it on pointerdown, then the
+       * button's own onClick sees a playing element and pauses it again.
+       */
+      if (event.target instanceof Element && event.target.closest(PLAYBACK_CONTROL_SELECTOR)) {
+        return
+      }
+
+      /* claim the attempt before awaiting, so a burst of events can't stack up */
+      settled = true
+      detach()
+      void audio!.play().catch(() => {
+        /* still blocked — put the listeners back for the next gesture */
+        settled = false
+        attach()
+      })
     }
 
     void audio
@@ -168,8 +184,7 @@ export const MusicPlayerProvider = ({ children, tracks = TRACKS }: MusicPlayerPr
         settled = true
       })
       .catch(() => {
-        if (settled) return
-        for (const type of GESTURES) window.addEventListener(type, start)
+        if (!settled) attach()
       })
 
     return () => {

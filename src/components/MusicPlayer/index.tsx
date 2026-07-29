@@ -1,4 +1,4 @@
-import { useMusicPlayer } from '../../hooks/MusicPlayer'
+import { playbackControlProps, useMusicPlayer } from '../../hooks/MusicPlayer'
 import { Waveform } from './Waveform'
 import './MusicPlayer.css'
 
@@ -50,6 +50,7 @@ export const MusicPlayer = () => {
             className="is-primary"
             onClick={toggle}
             aria-label={playing ? 'Pause' : 'Play'}
+            {...playbackControlProps}
           >
             {playing ? <>&#10074;&#10074;</> : <>&#9654;</>}
           </button>
