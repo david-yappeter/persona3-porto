@@ -1,0 +1,10 @@
+.menu-list {
+  position: absolute;
+  top: 50%;
+  left: 42%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  z-index: 3;
+}

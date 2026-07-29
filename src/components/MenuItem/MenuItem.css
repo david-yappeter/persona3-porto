@@ -1,0 +1,129 @@
+.menu-item {
+  position: relative;
+  display: block;
+  margin-left: var(--indent);
+  padding: 0;
+  font-size: calc(4.4rem * var(--scale));
+  font-style: italic;
+  line-height: 0.78;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  /* per-row tint and opacity, so no two rows sit at quite the same brightness */
+  color: var(--row-color);
+  opacity: var(--row-alpha);
+  /* brighter rows stack above darker ones where the words overlap */
+  z-index: var(--row-z);
+  /* each word gets its own tilt and lean — the P3 "hand-flung type" look */
+  transform: rotate(var(--rot)) skewX(var(--skew));
+  transform-origin: left center;
+  /* stroke in the fill colour fattens the glyphs well past the font's own weight */
+  -webkit-text-stroke: 6px var(--row-color);
+  paint-order: stroke fill;
+
+  /* Slash geometry, shared by the triangles and by the clipped text overlay so
+     the two can never drift apart. Change it here and both follow. */
+  --slash-shape: polygon(0 50%, 100% 0, 90% 100%);
+  --slash-left: -0.4em;
+  --slash-width: calc(100% + 2em);
+  /* back layer's height — this is the outer edge of the band, so the text
+     overlay is clipped to this box too */
+  --slash-height: 120%;
+  --slash-front-height: 107%;
+  /* colour the letters take where the slash crosses them */
+  --slash-text-color: #ff0000;
+}
+
+.menu-item-label {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes label-bounce {
+  0% {
+    transform: rotate(var(--rot)) skewX(var(--skew)) scale(1.1);
+  }
+  100% {
+    transform: rotate(var(--rot)) skewX(var(--skew)) scale(1);
+  }
+}
+
+@keyframes overlay-bounce {
+  0% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* highlighted row: black type outside the slash, --slash-text-color inside it.
+   Full opacity so the tint variation never dulls the selected row. */
+.menu-item.is-selected {
+  color: #000000;
+  -webkit-text-stroke-color: #000000;
+  opacity: 1;
+  /* above every row regardless of tint, so the slash is never overlapped */
+  z-index: 50;
+  animation: label-bounce 0.3s ease;
+}
+
+/* the two-triangle slash, painted over the label */
+.menu-item-slash {
+  position: absolute;
+  inset: 0;
+  left: var(--slash-left);
+  width: var(--slash-width);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.slash-tri {
+  position: absolute;
+  clip-path: var(--slash-shape);
+  transform-origin: center;
+}
+
+/* back layer */
+.slash-tri--magenta {
+  top: 0;
+  left: -30px;
+  width: 100%;
+  height: var(--slash-height);
+  background: #ff0099;
+}
+
+/* front layer */
+.slash-tri--white {
+  top: 5px;
+  left: 0px;
+  width: 85%;
+  height: var(--slash-front-height);
+  background: white;
+}
+
+/*
+ * Second copy of the label, drawn above the slash but clipped to the slash's
+ * own shape — so the letters stay readable where the band crosses them, just
+ * in a different colour. Box geometry matches .menu-item-slash exactly, which
+ * is what makes the clip line up with the triangles.
+ */
+.menu-item-label-overlay {
+  position: absolute;
+  top: 0;
+  left: var(--slash-left);
+  width: var(--slash-width);
+  height: var(--slash-height);
+  z-index: 3;
+  pointer-events: none;
+  clip-path: var(--slash-shape);
+}
+
+/* shifted back by the slash offset so it lands exactly on the original text */
+.menu-item-label-overlay-text {
+  position: absolute;
+  top: 0;
+  left: calc(-1 * var(--slash-left));
+  color: var(--slash-text-color);
+  -webkit-text-stroke-color: var(--slash-text-color);
+}

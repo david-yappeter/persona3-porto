@@ -1,0 +1,27 @@
+.wallet-box {
+  position: absolute;
+  top: 30px;
+  left: 100px;
+  display: flex;
+  flex-direction: column;
+  background: #fdfdfd;
+  color: #0a0a0a;
+  padding: 10px 22px 8px;
+  border: 2px solid #101010;
+  z-index: 4;
+}
+
+.wallet-amount {
+  font-weight: 900;
+  font-size: 1.7rem;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.wallet-label {
+  margin-top: 4px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 400;
+  font-size: 0.7rem;
+  color: #3a3a3a;
+}

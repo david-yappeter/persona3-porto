@@ -1,0 +1,53 @@
+/* --- background stack: bright cyan top-right, violet bottom-left --- */
+
+.bg-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(1.6) brightness(1.25) contrast(1.05);
+}
+
+.bg-wash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    155deg,
+    #00e2ff 0%,
+    #00b8f0 22%,
+    #2a5fd8 48%,
+    #4a25c8 70%,
+    #5b1fb0 100%
+  );
+  mix-blend-mode: color;
+  opacity: 0.92;
+}
+
+.bg-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 85% 5%, rgba(120, 255, 255, 0.55) 0%, rgba(0, 190, 255, 0) 55%),
+    linear-gradient(160deg, rgba(0, 200, 255, 0.1) 0%, rgba(80, 20, 190, 0.55) 100%);
+  mix-blend-mode: screen;
+}
+
+/* --- oversized bleeding typography on the left edge --- */
+
+.deco-type {
+  position: absolute;
+  top: 50%;
+  left: -3vw;
+  transform: translateY(-50%) rotate(-90deg) skewX(-12deg);
+  transform-origin: center;
+  font-size: 34vh;
+  font-weight: 900;
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  color: #101010;
+  opacity: 0.85;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
