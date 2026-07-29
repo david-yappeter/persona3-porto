@@ -114,12 +114,14 @@
   letter-spacing: 0.005em;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #40dbf5;
+  /* per-row tint and opacity, so no two rows sit at quite the same brightness */
+  color: var(--row-color);
+  opacity: var(--row-alpha);
   /* each word gets its own tilt and lean — the P3 "hand-flung type" look */
   transform: rotate(var(--rot)) skewX(var(--skew));
   transform-origin: left center;
   /* stroke in the fill colour fattens the glyphs well past the font's own weight */
-  -webkit-text-stroke: 6px #40dbf5;
+  -webkit-text-stroke: 6px var(--row-color);
   paint-order: stroke fill;
   transition: color 0.03s ease;
 
@@ -133,7 +135,7 @@
   --slash-height: 120%;
   --slash-front-height: 107%;
   /* colour the letters take where the slash crosses them */
-  --slash-text-color: #000000;
+  --slash-text-color: #ff0000;
 }
 
 .menu-item-label {
@@ -141,10 +143,12 @@
   z-index: 1;
 }
 
-/* highlighted row: cyan type outside the slash, --slash-text-color inside it */
+/* highlighted row: black type outside the slash, --slash-text-color inside it.
+   Full opacity so the tint variation never dulls the selected row. */
 .menu-item.is-selected {
-  color: #40dbf5;
-  -webkit-text-stroke-color: #40dbf5;
+  color: #000000;
+  -webkit-text-stroke-color: #000000;
+  opacity: 1;
 }
 
 /* the two-triangle slash, painted over the label */
