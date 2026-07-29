@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
-const SOUND_DOWN = '/sound/deck_ui_slider_down.wav'
-const SOUND_UP = '/sound/deck_ui_slider_up.wav'
+const SOUND_DOWN = `${import.meta.env.BASE_URL}sound/deck_ui_slider_down.wav`
+const SOUND_UP = `${import.meta.env.BASE_URL}sound/deck_ui_slider_up.wav`
 
 /** Arrow-key selection over a list of `count` entries, with the P3 click sounds. */
 export const useMenuNavigation = (count: number) => {
