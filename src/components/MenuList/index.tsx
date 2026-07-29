@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router'
 import type { MenuEntry } from '../../data/menuItems'
 import { MenuItem } from '../MenuItem'
 import { stackingOrder } from './stacking'
@@ -12,6 +13,7 @@ type MenuListProps = {
 
 export const MenuList = ({ items, selected, onSelect }: MenuListProps) => {
   const rowZ = useMemo(() => stackingOrder(items), [items])
+  const navigate = useNavigate()
 
   return (
     <nav className="menu-list">
@@ -22,6 +24,13 @@ export const MenuList = ({ items, selected, onSelect }: MenuListProps) => {
           selected={i === selected}
           z={rowZ[i]}
           onSelect={() => onSelect(i)}
+          onActivate={
+            item.to
+              ? /* viewTransition: true is what hands the swap to the browser's
+                   View Transitions API instead of switching instantly */
+                () => void navigate(item.to!, { viewTransition: true })
+              : undefined
+          }
         />
       ))}
     </nav>

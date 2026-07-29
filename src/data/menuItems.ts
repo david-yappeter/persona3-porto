@@ -12,6 +12,8 @@ export type MenuEntry = {
   tint: string
   /** row opacity, another small nudge in apparent brightness */
   alpha: number
+  /** route this row opens; rows without one are inert for now */
+  to?: string
 }
 
 export const MENU_ITEMS: MenuEntry[] = [

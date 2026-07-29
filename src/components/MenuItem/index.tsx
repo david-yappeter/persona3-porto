@@ -8,9 +8,11 @@ type MenuItemProps = {
   /** paint order among the overlapping rows — see stackingOrder in MenuList */
   z: number
   onSelect: () => void
+  /** omitted for rows that don't lead anywhere yet */
+  onActivate?: () => void
 }
 
-export const MenuItem = ({ item, selected, z, onSelect }: MenuItemProps) => {
+export const MenuItem = ({ item, selected, z, onSelect, onActivate }: MenuItemProps) => {
   const vars = {
     '--indent': `${item.indent}em`,
     '--scale': item.scale,
@@ -27,6 +29,7 @@ export const MenuItem = ({ item, selected, z, onSelect }: MenuItemProps) => {
       style={vars}
       onMouseEnter={onSelect}
       onFocus={onSelect}
+      onClick={onActivate}
     >
       {selected && (
         <span className="menu-item-slash" aria-hidden="true">

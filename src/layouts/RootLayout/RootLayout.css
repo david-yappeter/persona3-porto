@@ -1,0 +1,24 @@
+/*
+ * Naming this element makes it the unit the browser animates, instead of the
+ * whole page. Without it the background video and the music player would be
+ * captured in the snapshot and wipe along with the content.
+ */
+.route-view {
+  view-transition-name: route-view;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* the layer itself is inert; its children take pointer events back */
+.route-view > * {
+  pointer-events: auto;
+}
+.menu-screen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #3a1d8f;
+}

@@ -16,6 +16,21 @@ const FADE_OUT = 4
 
 const clamp01 = (n: number) => Math.min(Math.max(n, 0), 1)
 
+const VOLUME_KEY = 'persona:volume'
+
+/* localStorage throws in private modes and sandboxed frames, so every access
+   is guarded — a failure just means the level isn't remembered */
+const readStoredVolume = () => {
+  try {
+    const raw = localStorage.getItem(VOLUME_KEY)
+    if (raw === null) return 1
+    const parsed = Number.parseFloat(raw)
+    return Number.isFinite(parsed) ? clamp01(parsed) : 1
+  } catch {
+    return 1
+  }
+}
+
 export const MusicPlayerProvider = ({ children, tracks = TRACKS }: MusicPlayerProviderProps) => {
   const audioRef = useRef<HTMLAudioElement>(null)
   /* mirrors `playing` so callbacks can read it without going stale */
@@ -27,11 +42,15 @@ export const MusicPlayerProvider = ({ children, tracks = TRACKS }: MusicPlayerPr
   const fadeInFrom = useRef(0)
   const audioContext = useRef<AudioContext | null>(null)
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null)
+  /* mirrors `volume` so the per-frame envelope can read it without re-running */
+  const volumeRef = useRef(readStoredVolume())
 
   const [index, setIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [volume, setVolumeState] = useState(readStoredVolume)
+  const [muted, setMuted] = useState(false)
 
   const track = tracks[index]
 
@@ -68,6 +87,37 @@ export const MusicPlayerProvider = ({ children, tracks = TRACKS }: MusicPlayerPr
     if (!audio || !Number.isFinite(audio.duration)) return
     audio.currentTime = Math.min(Math.max(ratio, 0), 1) * audio.duration
   }, [])
+
+  const setVolume = useCallback((level: number) => {
+    const next = clamp01(level)
+    volumeRef.current = next
+    setVolumeState(next)
+    /* raising the level is an implicit un-mute */
+    if (next > 0) setMuted(false)
+
+    /* while paused nothing drives the envelope, so apply it directly */
+    const audio = audioRef.current
+    if (audio && !playingRef.current) audio.volume = next
+
+    try {
+      localStorage.setItem(VOLUME_KEY, String(next))
+    } catch {
+      /* storage unavailable — the level just won't survive a reload */
+    }
+  }, [])
+
+  /* apply the remembered level to the element before anything plays */
+  useEffect(() => {
+    const audio = audioRef.current
+    if (audio) audio.volume = volumeRef.current
+  }, [])
+
+  const toggleMute = useCallback(() => setMuted((value) => !value), [])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (audio) audio.muted = muted
+  }, [muted])
 
   /*
    * Tap the element into a Web Audio graph so visualisers can read the live
@@ -117,14 +167,16 @@ export const MusicPlayerProvider = ({ children, tracks = TRACKS }: MusicPlayerPr
     let frame = 0
     const tick = () => {
       const elapsed = (performance.now() - fadeInFrom.current) / 1000
-      let volume = clamp01(elapsed / FADE_IN)
+      let envelope = clamp01(elapsed / FADE_IN)
 
       const remaining = audio.duration - audio.currentTime
       if (Number.isFinite(remaining)) {
-        volume = Math.min(volume, clamp01(remaining / FADE_OUT))
+        envelope = Math.min(envelope, clamp01(remaining / FADE_OUT))
       }
 
-      audio.volume = volume
+      /* the fade is a multiplier on the listener's own level, never a
+         replacement for it — otherwise every frame would undo the slider */
+      audio.volume = envelope * volumeRef.current
       frame = requestAnimationFrame(tick)
     }
 
@@ -206,8 +258,28 @@ export const MusicPlayerProvider = ({ children, tracks = TRACKS }: MusicPlayerPr
       prev,
       seek,
       analyser,
+      volume,
+      setVolume,
+      muted,
+      toggleMute,
     }),
-    [tracks, track, index, playing, currentTime, duration, toggle, next, prev, seek, analyser],
+    [
+      tracks,
+      track,
+      index,
+      playing,
+      currentTime,
+      duration,
+      toggle,
+      next,
+      prev,
+      seek,
+      analyser,
+      volume,
+      setVolume,
+      muted,
+      toggleMute,
+    ],
   )
 
   return (

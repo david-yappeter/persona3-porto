@@ -20,6 +20,11 @@ export const useMenuNavigation = (count: number) => {
     }
 
     const onKey = (e: KeyboardEvent) => {
+      /* let a focused control have its own arrow keys — on a range input they
+         adjust the value, and the menu shouldn't move at the same time */
+      const active = document.activeElement
+      if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
+
       if (e.key === 'ArrowDown') {
         e.preventDefault()
         setSelected((i) => (i + 1) % count)

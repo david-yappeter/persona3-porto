@@ -105,6 +105,70 @@
   background: #ff5ba4;
 }
 
+.music-player-volume {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.music-player-mute {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 20px;
+  color: #59d8f2;
+  background: transparent;
+  transition: color 0.12s ease;
+}
+
+.music-player-mute:hover {
+  color: #ffffff;
+}
+
+.music-player-mute[aria-pressed='true'] {
+  color: #ff5ba4;
+}
+
+/* track is painted with a gradient stop at --level, so the filled part
+   matches the scrubber without needing a second element */
+.music-player-volume-slider {
+  flex: 1;
+  height: 4px;
+  appearance: none;
+  background: linear-gradient(
+    90deg,
+    #59d8f2 0%,
+    #59d8f2 var(--level),
+    rgba(255, 255, 255, 0.16) var(--level),
+    rgba(255, 255, 255, 0.16) 100%
+  );
+  cursor: pointer;
+}
+
+.music-player-volume-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.music-player-volume-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: none;
+  border-radius: 0;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.music-player-volume-slider:focus-visible {
+  outline: 2px solid #59d8f2;
+  outline-offset: 3px;
+}
+
 .music-player-time {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 0.62rem;

@@ -13,6 +13,11 @@ export type MusicPlayerValue = {
   prev: () => void
   /** jump to a position given as 0–1 of the track's length */
   seek: (ratio: number) => void
+  /** listener's own level, 0–1; the fade envelope rides on top of this */
+  volume: number
+  setVolume: (level: number) => void
+  muted: boolean
+  toggleMute: () => void
   /** live frequency data for visualisers; null until playback first starts */
   analyser: AnalyserNode | null
 }
