@@ -91,6 +91,16 @@
   width: 100%;
   height: var(--slash-height);
   background: #ff0099;
+  animation: heartbeat 0.9s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 40%, 60%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
 }
 
 /* front layer */
