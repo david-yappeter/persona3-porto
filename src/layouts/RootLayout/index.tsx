@@ -1,7 +1,7 @@
 import { CommandHint } from '../../components/CommandHint'
 import { MusicPlayer } from '../../components/MusicPlayer'
 import { PageTransition } from '../../components/PageTransition'
-import { RouteTransition } from '../../components/RouteTransition'
+import { RouteTransition, RouteTransitionKind } from '../../components/RouteTransition'
 import { WalletBox } from '../../components/WalletBox'
 import './RootLayout.css'
 
@@ -20,7 +20,10 @@ export const RootLayout = () => {
       <PageTransition />
 
       <main className="route-view">
-        <RouteTransition />
+        {/* rules lets any specific from->to pair play a different kind,
+            e.g. [{ from: '/', to: '/skill', kind: RouteTransitionKind.X }] —
+            anything not listed falls back to defaultKind */}
+        <RouteTransition defaultKind={RouteTransitionKind.CircleReveal} />
       </main>
 
       <WalletBox amount="¥47,407" />

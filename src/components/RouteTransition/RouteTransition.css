@@ -1,49 +1,16 @@
-.route-exit-old {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.route-enter {
-  position: relative;
-  z-index: 1;
-  height: 100%;
-}
-
 /*
- * Must be sized to match .route-enter, not 0x0 — the clip-path's cx/cy/r
- * percentages resolve against this SVG's own viewport, not the element that
- * references it via clip-path: url(#id), so a zero-sized defs box collapses
- * the whole clip region to nothing.
+ * Baseline for the live/current page wrapper. Every transition effect (see
+ * ./transitions) wraps its incoming content in an element carrying this
+ * class, and the idle path below (no transition in flight) uses it too.
+ *
+ * Without an explicit height here, a bare ".route-live" collapses to fit
+ * its content once a transition ends and effects stop adding their own
+ * sizing (e.g. CircleReveal's ".route-enter" also sets height: 100%, but
+ * only while it's mounted) — breaking any page that relies on height: 100%
+ * cascading down, like Skill's centered layout snapping to the top the
+ * instant its transition finished.
  */
-.route-enter-clip-defs {
-  position: absolute;
-  inset: 0;
-  width: 100%;
+.route-live {
+  position: relative;
   height: 100%;
-  pointer-events: none;
-}
-
-.route-enter-circle {
-  animation: route-enter-grow 950ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
-}
-
-@keyframes route-enter-grow {
-  from {
-    r: 0;
-  }
-  to {
-    r: 150%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .route-exit-old {
-    display: none;
-  }
-
-  .route-enter {
-    clip-path: none !important;
-  }
 }

@@ -1,69 +1,91 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ComponentType } from 'react'
 import { useLocation, useOutlet } from 'react-router'
 import './RouteTransition.css'
+import { CircleRevealTransition } from './transitions/CircleReveal'
+import {
+  RouteTransitionKind,
+  type ExitingRoute,
+  type RouteTransitionEffectProps,
+  type RouteTransitionRule,
+} from './types'
 
-type Exiting = { key: string; node: ReactNode }
+export { RouteTransitionKind }
+export type { RouteTransitionRule }
+
+type RouteTransitionProps = {
+  /** used for any from/to pair not covered by `rules` */
+  defaultKind: RouteTransitionKind
+  /** per-direction overrides — e.g. "/" -> "/skill" can play a different
+      transition than "/skill" -> "/" */
+  rules?: RouteTransitionRule[]
+}
+
+/* add a new transition: a RouteTransitionKind member + an effect component
+   matching RouteTransitionEffectProps, registered here. Nothing else needs
+   to change. */
+const EFFECTS: Record<RouteTransitionKind, ComponentType<RouteTransitionEffectProps>> = {
+  [RouteTransitionKind.CircleReveal]: CircleRevealTransition,
+}
+
+type Exiting = ExitingRoute & { kind: RouteTransitionKind }
 
 /*
- * Renders the current route (from useOutlet, in place of <Outlet/>) and,
- * for a moment after every navigation, the *previous* route sitting behind
- * it, fully visible and unclipped. The live/incoming page is clip-path'd
- * down to the union of two circles that grow from 0 to full-cover — so it
- * looks like the old page (behind, plain) gets progressively painted over
- * by the new page, revealed through the growing circles.
- *
- * This clips the INCOMING page rather than masking the OUTGOING one (an
- * earlier version did it that way round) because `mask-image` silently
- * breaks compositing for anything on its own GPU layer inside the masked
- * subtree — a <video>, or MenuItem's animated clip-path slash highlight,
- * would just fail to paint at all. `clip-path` doesn't have that problem,
- * but it also can't easily express "everywhere except these two circles"
- * (that's a donut shape, needs even-odd fill-rule path math); clipping the
- * live page to "just these two circles" is the same visual result and is
- * simple geometry.
+ * Renders the current route (from useOutlet, in place of <Outlet/>) and
+ * owns the "what was the previous page, and which effect should play"
+ * bookkeeping generically — the actual per-kind visuals live in ./transitions
+ * and only see { outlet, exiting, onExitComplete } as props.
  */
-export const RouteTransition = () => {
+export const RouteTransition = ({ defaultKind, rules }: RouteTransitionProps) => {
   const location = useLocation()
   const outlet = useOutlet()
 
+  const prevPath = useRef(location.pathname)
   const prevKey = useRef(location.key)
   const prevNode = useRef(outlet)
   const [exiting, setExiting] = useState<Exiting | null>(null)
 
+  /* mirror of the videoTime capture below, but for the *other* remount
+     boundary: when the transition ends, the dispatcher swaps from
+     whichever Effect was rendering ".route-live" back to rendering it
+     directly — a different parent component, so React remounts the live
+     page (and its <video>) right then too. Captured in handleExitComplete,
+     applied once the plain wrapper is back in the DOM. */
+  const resumeVideoTime = useRef(0)
+
+  useEffect(() => {
+    if (exiting) return
+    const video = document.querySelector<HTMLVideoElement>('.route-live video')
+    if (video && resumeVideoTime.current > 0) {
+      video.currentTime = resumeVideoTime.current
+      void video.play()
+    }
+  }, [exiting])
+
   if (prevKey.current !== location.key) {
-    setExiting({ key: prevKey.current, node: prevNode.current })
+    const kind = rules?.find((r) => r.from === prevPath.current && r.to === location.pathname)?.kind ?? defaultKind
+    /* the outgoing page's video is about to unmount and remount as the
+       ghost copy whichever effect renders — reading its currentTime here,
+       before that happens, so the ghost can seek to match instead of
+       visibly snapping back to frame 0. Every effect exposes its live
+       content under ".route-live", so this selector holds regardless of
+       which kind was active for the *previous* transition. */
+    const liveVideo = document.querySelector<HTMLVideoElement>('.route-live video')
+    setExiting({ key: prevKey.current, node: prevNode.current, videoTime: liveVideo?.currentTime ?? 0, kind })
     prevKey.current = location.key
+    prevPath.current = location.pathname
   }
   prevNode.current = outlet
 
-  useEffect(() => {
-    if (!exiting) return
-    const timer = setTimeout(() => setExiting(null), 950)
-    return () => clearTimeout(timer)
-  }, [exiting])
+  if (!exiting) {
+    return <div className="route-live">{outlet}</div>
+  }
 
-  const clipId = exiting ? `route-enter-clip-${exiting.key}` : null
+  const handleExitComplete = () => {
+    const video = document.querySelector<HTMLVideoElement>('.route-live video')
+    resumeVideoTime.current = video?.currentTime ?? 0
+    setExiting(null)
+  }
 
-  return (
-    <>
-      {exiting && (
-        <div className="route-exit-old" aria-hidden="true">
-          {exiting.node}
-        </div>
-      )}
-
-      <div className="route-enter" style={clipId ? ({ clipPath: `url(#${clipId})` } as CSSProperties) : undefined}>
-        {outlet}
-      </div>
-
-      {clipId && (
-        <svg className="route-enter-clip-defs" aria-hidden="true">
-          <clipPath id={clipId}>
-            <circle className="route-enter-circle" style={{ cx: '80%', cy: '20%', r: 0 } as CSSProperties} />
-            <circle className="route-enter-circle" style={{ cx: '20%', cy: '80%', r: 0 } as CSSProperties} />
-          </clipPath>
-        </svg>
-      )}
-    </>
-  )
+  const Effect = EFFECTS[exiting.kind]
+  return <Effect outlet={outlet} exiting={exiting} onExitComplete={handleExitComplete} />
 }
