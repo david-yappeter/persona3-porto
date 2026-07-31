@@ -1,13 +1,17 @@
 import { createBrowserRouter } from 'react-router'
 import { RootLayout } from './layouts/RootLayout'
 import { MainMenu } from './pages/MainMenu'
+import { Skill } from './pages/Skill'
 
 export const router = createBrowserRouter(
   [
     {
       path: '/',
       Component: RootLayout,
-      children: [{ index: true, Component: MainMenu }],
+      children: [
+        { index: true, Component: MainMenu },
+        { path: 'skill', Component: Skill },
+      ],
     },
   ],
   /* Vite serves under a sub-path in production (see vite.config.ts), so the

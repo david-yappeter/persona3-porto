@@ -1,32 +1,29 @@
-import { Outlet, useLocation } from 'react-router'
 import { CommandHint } from '../../components/CommandHint'
-import { MenuBackground } from '../../components/MenuBackground'
 import { MusicPlayer } from '../../components/MusicPlayer'
 import { PageTransition } from '../../components/PageTransition'
+import { RouteTransition } from '../../components/RouteTransition'
 import { WalletBox } from '../../components/WalletBox'
 import './RootLayout.css'
 
 /*
- * Persistent chrome. Everything here sits outside the <Outlet>, so it survives
- * navigation untouched — the background video never reloads and the music
- * player keeps its position across page changes.
+ * Persistent chrome. Everything here sits outside RouteTransition, so it
+ * survives navigation untouched — the wallet and music player keep their
+ * position across page changes. MenuBackground is deliberately NOT here —
+ * each page (MainMenu, Skill) renders its own, so it's captured as part of
+ * that page's exit snapshot in RouteTransition.
  */
 export const RootLayout = () => {
-  const { pathname } = useLocation()
-
   return (
     <div className="menu-screen">
-      {/* keying on pathname remounts this on every navigation (and on first
-          load), restarting the ripple-reveal animation each time */}
-      <PageTransition key={pathname} />
-      <MenuBackground />
-      <WalletBox amount="¥47,407" />
+      {/* only plays once, for the very first paint — there's no previous
+          page to reveal from before that */}
+      <PageTransition />
 
-      {/* only this subtree is captured by the view transition */}
       <main className="route-view">
-        <Outlet />
+        <RouteTransition />
       </main>
 
+      <WalletBox amount="¥47,407" />
       <MusicPlayer />
       <CommandHint title="Use a Skill" />
     </div>

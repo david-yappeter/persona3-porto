@@ -26,9 +26,9 @@ export const MenuList = ({ items, selected, onSelect }: MenuListProps) => {
           onSelect={() => onSelect(i)}
           onActivate={
             item.to
-              ? /* viewTransition: true is what hands the swap to the browser's
-                   View Transitions API instead of switching instantly */
-                () => void navigate(item.to!, { viewTransition: true })
+              ? /* plain navigate — RouteTransition handles the reveal itself,
+                   see src/components/RouteTransition */
+                () => void navigate(item.to!)
               : undefined
           }
         />
