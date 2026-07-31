@@ -7,6 +7,10 @@
   height: 100%;
   object-fit: cover;
   filter: saturate(1.6) brightness(1.25) contrast(1.05);
+  /* covers the brief decode gap while RouteTransition reseeks this video
+     after a remount (see RouteTransition/index.tsx) — a hard cut to a blank
+     frame during that seek reads as a blip, a quick fade reads as a dip */
+  transition: opacity 150ms ease;
 }
 
 .bg-wash {

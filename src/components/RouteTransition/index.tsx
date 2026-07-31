@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentType } from 'react'
+import { useRef, useState, type ComponentType } from 'react'
 import { useLocation, useOutlet } from 'react-router'
 import './RouteTransition.css'
 import { CircleRevealTransition } from './transitions/CircleReveal'
@@ -30,62 +30,47 @@ const EFFECTS: Record<RouteTransitionKind, ComponentType<RouteTransitionEffectPr
 type Exiting = ExitingRoute & { kind: RouteTransitionKind }
 
 /*
- * Renders the current route (from useOutlet, in place of <Outlet/>) and
- * owns the "what was the previous page, and which effect should play"
- * bookkeeping generically — the actual per-kind visuals live in ./transitions
- * and only see { outlet, exiting, onExitComplete } as props.
+ * Renders the current route (from useOutlet, in place of <Outlet/>) inside
+ * a single ".route-live" div that this component owns and renders itself,
+ * unconditionally, for its entire lifetime — effects (./transitions) style
+ * it imperatively via `liveRef` rather than rendering it themselves. An
+ * earlier version had each effect wrap the live content in its own JSX;
+ * that meant the live page briefly had a *different React parent* at the
+ * exact moment a transition started or ended, which forces a real
+ * unmount/remount of the whole page (and a visible flicker) on top of
+ * whatever the actual route change was already doing.
  */
 export const RouteTransition = ({ defaultKind, rules }: RouteTransitionProps) => {
   const location = useLocation()
   const outlet = useOutlet()
+  const liveRef = useRef<HTMLDivElement>(null)
 
   const prevPath = useRef(location.pathname)
   const prevKey = useRef(location.key)
   const prevNode = useRef(outlet)
   const [exiting, setExiting] = useState<Exiting | null>(null)
 
-  /* mirror of the videoTime capture below, but for the *other* remount
-     boundary: when the transition ends, the dispatcher swaps from
-     whichever Effect was rendering ".route-live" back to rendering it
-     directly — a different parent component, so React remounts the live
-     page (and its <video>) right then too. Captured in handleExitComplete,
-     applied once the plain wrapper is back in the DOM. */
-  const resumeVideoTime = useRef(0)
-
-  useEffect(() => {
-    if (exiting) return
-    const video = document.querySelector<HTMLVideoElement>('.route-live video')
-    if (video && resumeVideoTime.current > 0) {
-      video.currentTime = resumeVideoTime.current
-      void video.play()
-    }
-  }, [exiting])
-
   if (prevKey.current !== location.key) {
     const kind = rules?.find((r) => r.from === prevPath.current && r.to === location.pathname)?.kind ?? defaultKind
     /* the outgoing page's video is about to unmount and remount as the
        ghost copy whichever effect renders — reading its currentTime here,
        before that happens, so the ghost can seek to match instead of
-       visibly snapping back to frame 0. Every effect exposes its live
-       content under ".route-live", so this selector holds regardless of
-       which kind was active for the *previous* transition. */
-    const liveVideo = document.querySelector<HTMLVideoElement>('.route-live video')
+       visibly snapping back to frame 0 */
+    const liveVideo = liveRef.current?.querySelector<HTMLVideoElement>('video')
     setExiting({ key: prevKey.current, node: prevNode.current, videoTime: liveVideo?.currentTime ?? 0, kind })
     prevKey.current = location.key
     prevPath.current = location.pathname
   }
   prevNode.current = outlet
 
-  if (!exiting) {
-    return <div className="route-live">{outlet}</div>
-  }
+  const Effect = exiting ? EFFECTS[exiting.kind] : null
 
-  const handleExitComplete = () => {
-    const video = document.querySelector<HTMLVideoElement>('.route-live video')
-    resumeVideoTime.current = video?.currentTime ?? 0
-    setExiting(null)
-  }
-
-  const Effect = EFFECTS[exiting.kind]
-  return <Effect outlet={outlet} exiting={exiting} onExitComplete={handleExitComplete} />
+  return (
+    <>
+      {Effect && exiting && <Effect exiting={exiting} liveRef={liveRef} onExitComplete={() => setExiting(null)} />}
+      <div className="route-live" ref={liveRef}>
+        {outlet}
+      </div>
+    </>
+  )
 }

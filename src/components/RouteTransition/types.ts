@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 
 /** Which page-to-page transition effect RouteTransition should play. */
 export enum RouteTransitionKind {
@@ -17,12 +17,16 @@ export type ExitingRoute = {
 }
 
 export type RouteTransitionEffectProps = {
-  /** the current/incoming page. Implementations MUST wrap it in an element
-      carrying className "route-live" — RouteTransition looks up
-      ".route-live video" synchronously right before the *next* navigation
-      swaps this out, so every effect needs to expose it under that name. */
-  outlet: ReactNode
   exiting: ExitingRoute
+  /** ref to the live/incoming page's wrapper — RouteTransition renders and
+      owns this element itself, permanently, so it's never reparented across
+      a transition starting or ending. Effects apply their visual (clip-path,
+      classes, whatever) to it directly via this ref instead of rendering the
+      live content themselves — rendering it a second time, even wrapped
+      identically, is a different React parent and forces a real
+      unmount/remount of the whole live page on top of the actual route
+      change, which is what caused the flicker this replaced. */
+  liveRef: RefObject<HTMLDivElement | null>
   /** call once the effect's animation is done, so RouteTransition can drop
       the ghost and go back to rendering the live page plainly */
   onExitComplete: () => void
