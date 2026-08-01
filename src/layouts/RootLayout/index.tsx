@@ -3,6 +3,7 @@ import { MusicPlayer } from '../../components/MusicPlayer'
 import { PageTransition } from '../../components/PageTransition'
 import { RouteTransition, RouteTransitionKind } from '../../components/RouteTransition'
 import { WalletBox } from '../../components/WalletBox'
+import { useNavigationSound } from '../../hooks/NavigationSound'
 import './RootLayout.css'
 
 /*
@@ -13,6 +14,8 @@ import './RootLayout.css'
  * that page's exit snapshot in RouteTransition.
  */
 export const RootLayout = () => {
+  useNavigationSound()
+
   return (
     <div className="menu-screen">
       {/* only plays once, for the very first paint — there's no previous
