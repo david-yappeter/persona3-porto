@@ -45,6 +45,8 @@ export const MenuBackground = ({
         playsInline
         onEnded={() => setShowEntrance(false)}
       />
+      <div className="bg-wash" />
+      <div className="bg-glow" />
 
       <div className="deco-type" aria-hidden="true">
         {decoText}
