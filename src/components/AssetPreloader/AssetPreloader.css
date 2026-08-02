@@ -1,0 +1,38 @@
+.asset-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1em;
+  background: #050208;
+}
+
+.asset-preloader-label {
+  font-family: 'Eurostile Extended', sans-serif;
+  font-style: italic;
+  font-size: 1.4rem;
+  letter-spacing: 0.15em;
+  color: #59d8f2;
+}
+
+.asset-preloader-bar {
+  width: min(60vw, 420px);
+  height: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.asset-preloader-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff0099, #59d8f2);
+  transition: width 120ms ease-out;
+}
+
+.asset-preloader-pct {
+  font-family: 'Eurostile Extended', sans-serif;
+  font-size: 0.9rem;
+  color: #9fdcec;
+}
