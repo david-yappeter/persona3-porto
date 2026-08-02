@@ -9,9 +9,17 @@ type MenuListProps = {
   items: MenuEntry[]
   selected: number
   onSelect: (index: number) => void
+  /** bottom-to-top staggered opacity fade-in for the rows — meant only for a
+      true page load of "/", not SPA nav back to it, see MainMenu's
+      hasPlayedEntrance */
+  animateIn?: boolean
 }
 
-export const MenuList = ({ items, selected, onSelect }: MenuListProps) => {
+/** stagger step between adjacent rows, bottom row first */
+const INITIAL_ENTER_DELAY = 950
+const ENTER_STEP_MS = 50
+
+export const MenuList = ({ items, selected, onSelect, animateIn = false }: MenuListProps) => {
   const rowZ = useMemo(() => stackingOrder(items), [items])
   const navigate = useNavigate()
 
@@ -36,13 +44,14 @@ export const MenuList = ({ items, selected, onSelect }: MenuListProps) => {
   }, [items, selected, navigate])
 
   return (
-    <nav className="menu-list">
+    <nav className={`menu-list${animateIn ? ' menu-list--entering' : ''}`}>
       {items.map((item, i) => (
         <MenuItem
           key={item.label}
           item={item}
           selected={i === selected}
           z={rowZ[i]}
+          enterDelay={INITIAL_ENTER_DELAY + (items.length - 1 - i) * ENTER_STEP_MS}
           onSelect={() => onSelect(i)}
           onActivate={item.to ? () => activate(i) : undefined}
         />

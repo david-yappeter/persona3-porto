@@ -68,6 +68,33 @@
   animation: label-bounce 0.3s ease;
 }
 
+/*
+ * MenuList's initial-load-only reveal (see animateIn on MenuList): each row
+ * fades in from opacity 0, staggered bottom row first via --enter-delay. No
+ * explicit "to" keyframe — CSS fills it in from the row's own opacity
+ * (var(--row-alpha)), so this doesn't need to know or duplicate that value.
+ */
+@keyframes menu-item-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.menu-list--entering .menu-item {
+  animation: menu-item-fade-in 650ms ease-out both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+
+/* the default row's already-selected on first paint also needs its bounce —
+   `animation` is a single property, so this lists both rather than losing
+   one to the cascade */
+.menu-list--entering .menu-item.is-selected {
+  animation:
+    label-bounce 0.3s ease,
+    menu-item-fade-in 650ms ease-out both;
+  animation-delay: var(--enter-delay, 0ms), var(--enter-delay, 0ms);
+}
+
 /* the two-triangle slash, painted over the label */
 .menu-item-slash {
   position: absolute;

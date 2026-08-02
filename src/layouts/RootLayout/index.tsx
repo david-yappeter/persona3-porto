@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { useLocation } from 'react-router'
 import { CommandHint } from '../../components/CommandHint'
 import { MusicPlayer } from '../../components/MusicPlayer'
 import { PageTransition } from '../../components/PageTransition'
@@ -15,12 +17,18 @@ import './RootLayout.css'
  */
 export const RootLayout = () => {
   useNavigationSound()
+  const location = useLocation()
+  /* "/" has its own reveal now — the entrance video + menu row fade-in
+     (see MainMenu) — so the ripple only plays landing cold on any other
+     route. Captured once at mount; RootLayout never remounts on SPA nav, so
+     this can't flip mid-session. */
+  const [showRipple] = useState(() => location.pathname !== '/')
 
   return (
     <div className="menu-screen">
-      {/* only plays once, for the very first paint — there's no previous
-          page to reveal from before that */}
-      <PageTransition />
+      {/* only plays once, for the very first paint of a non-"/" route —
+          there's no previous page to reveal from before that */}
+      {showRipple && <PageTransition />}
 
       <main className="route-view">
         {/* rules lets any specific from->to pair play a different kind,

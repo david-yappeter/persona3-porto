@@ -10,9 +10,12 @@ type MenuItemProps = {
   onSelect: () => void
   /** omitted for rows that don't lead anywhere yet */
   onActivate?: () => void
+  /** stagger offset (ms) for MenuList's initial-load fade-in — see animateIn
+      on MenuList */
+  enterDelay?: number
 }
 
-export const MenuItem = ({ item, selected, z, onSelect, onActivate }: MenuItemProps) => {
+export const MenuItem = ({ item, selected, z, onSelect, onActivate, enterDelay = 0 }: MenuItemProps) => {
   const vars = {
     '--indent': `${item.indent}em`,
     '--scale': item.scale,
@@ -21,6 +24,7 @@ export const MenuItem = ({ item, selected, z, onSelect, onActivate }: MenuItemPr
     '--row-color': item.tint,
     '--row-alpha': item.alpha,
     '--row-z': z,
+    '--enter-delay': `${enterDelay}ms`,
   } as CSSProperties
 
   return (
