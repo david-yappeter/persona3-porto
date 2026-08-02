@@ -13,30 +13,6 @@
   transition: opacity 150ms ease;
 }
 
-.bg-wash {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    155deg,
-    #00e2ff 0%,
-    #00b8f0 22%,
-    #2a5fd8 48%,
-    #4a25c8 70%,
-    #5b1fb0 100%
-  );
-  mix-blend-mode: color;
-  opacity: 0.92;
-}
-
-.bg-glow {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(120% 90% at 85% 5%, rgba(120, 255, 255, 0.55) 0%, rgba(0, 190, 255, 0) 55%),
-    linear-gradient(160deg, rgba(0, 200, 255, 0.1) 0%, rgba(80, 20, 190, 0.55) 100%);
-  mix-blend-mode: screen;
-}
-
 /* --- oversized bleeding typography on the left edge --- */
 
 .deco-type {
