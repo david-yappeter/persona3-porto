@@ -31,10 +31,12 @@ export const RootLayout = () => {
       {showRipple && <PageTransition />}
 
       <main className="route-view">
-        {/* rules lets any specific from->to pair play a different kind,
-            e.g. [{ from: '/', to: '/skill', kind: RouteTransitionKind.X }] —
+        {/* rules lets any specific from->to pair play a different kind —
             anything not listed falls back to defaultKind */}
-        <RouteTransition defaultKind={RouteTransitionKind.CircleReveal} />
+        <RouteTransition
+          defaultKind={RouteTransitionKind.CircleReveal}
+          rules={[{ from: '/', to: '/skill', kind: RouteTransitionKind.DoubleRipple }]}
+        />
       </main>
 
       <WalletBox amount="¥47,407" />

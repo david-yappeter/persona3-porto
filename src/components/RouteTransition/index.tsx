@@ -2,6 +2,7 @@ import { useRef, useState, type ComponentType } from 'react'
 import { useLocation, useOutlet } from 'react-router'
 import './RouteTransition.css'
 import { CircleRevealTransition } from './transitions/CircleReveal'
+import { DoubleRippleTransition } from './transitions/DoubleRipple'
 import {
   RouteTransitionKind,
   type ExitingRoute,
@@ -25,6 +26,7 @@ type RouteTransitionProps = {
    to change. */
 const EFFECTS: Record<RouteTransitionKind, ComponentType<RouteTransitionEffectProps>> = {
   [RouteTransitionKind.CircleReveal]: CircleRevealTransition,
+  [RouteTransitionKind.DoubleRipple]: DoubleRippleTransition,
 }
 
 type Exiting = ExitingRoute & { kind: RouteTransitionKind }

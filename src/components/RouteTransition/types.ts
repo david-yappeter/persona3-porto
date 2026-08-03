@@ -5,6 +5,10 @@ export enum RouteTransitionKind {
   /** Two circles grow from the top-right and bottom-left corners, revealing
       the incoming page over the outgoing one. */
   CircleReveal = 'circle-reveal',
+  /** Same two origins, but as two staggered ripples 200ms apart: the first
+      only flashes a heavy blue overlay over the outgoing page, the second
+      chases behind it revealing the incoming page. */
+  DoubleRipple = 'double-ripple',
 }
 
 export type ExitingRoute = {
