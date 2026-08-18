@@ -39,7 +39,6 @@ export const RootLayout = () => {
         />
       </main>
 
-      <WalletBox amount="¥47,407" />
       <MusicPlayer />
       <CommandHint title="Use a Skill" />
     </div>

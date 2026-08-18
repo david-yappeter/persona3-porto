@@ -20,17 +20,20 @@ export const SkillRow = ({ headSrc, name, level, hp, sp, tag }: SkillRowProps) =
       {tag && <span className="skill-row-tag">{tag}</span>}
       <div className="skill-row-content">
         <span className="skill-row-name">{name}</span>
+        <span className="skill-row-slash" aria-hidden="true">/</span>
         <span className="skill-row-level">
           <span className="skill-row-level-label">Lv</span>
-          {level}
+          <span className="skill-row-level-value">{level}</span>
         </span>
+        {/* the numbers carry their own span so the colored underline stops at the
+            digits — text-decoration can't be cancelled on a nested label */}
         <span className="skill-row-stat skill-row-stat--hp">
           <span className="skill-row-stat-label">HP</span>
-          {hp}
+          <span className="skill-row-stat-value">{hp}</span>
         </span>
         <span className="skill-row-stat skill-row-stat--sp">
           <span className="skill-row-stat-label">SP</span>
-          {sp}
+          <span className="skill-row-stat-value">{sp}</span>
         </span>
       </div>
     </div>

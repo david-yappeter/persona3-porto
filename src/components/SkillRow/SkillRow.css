@@ -1,21 +1,38 @@
 .skill-row {
+  /* the black bar is painted here and cut to shape by --skill-row-shape;
+     head_row_*_colored.png rides on top of it as the band + head silhouette */
+  --skill-row-h: 70px;
+  /* the bar's right cut, measured off the PNGs: both asset families put it at
+     99.7% of the width along the top edge and 95.5% along the bottom */
+  --skill-row-cut-top: 99.7%;
+  --skill-row-cut-bottom: 95.5%;
+  --skill-row-border: 3px;
+  /* the bar outline itself — reused verbatim as the outer ring of .is-leader's
+     border so the black bar and the red highlight share one silhouette */
+  --skill-row-shape: polygon(
+    0 0,
+    var(--skill-row-cut-top) 0,
+    var(--skill-row-cut-bottom) 100%,
+    0 100%
+  );
+
   position: relative;
   width: 100%;
   max-width: 700px;
-  height: 70px;
-  /* matches head_row_*_colored.png's native 1025x205 proportions */
-  aspect-ratio: 1025 / 205;
-  overflow: hidden;
+  height: var(--skill-row-h);
+  margin-bottom: calc(var(--skill-row-h) * 0.08);
   background: #000000;
-  margin-bottom: 10px;
-  clip-path: polygon(0 0, 100% 0, 99% 100%, 0 100%);
+  clip-path: var(--skill-row-shape);
 }
 
 .skill-row-bg {
   position: absolute;
   inset: 0;
-  left: 50px;
+  left: -17%;
+  width: 100%;
   height: 100%;
+  /* deliberate stretch, not a mistake: the art is ~5:1 and the row is ~10:1,
+     which is exactly how much the source UI elongates the heads horizontally */
   object-fit: contain;
   pointer-events: none;
   z-index: 2;
@@ -24,86 +41,127 @@
 .skill-row-content {
   position: absolute;
   inset: 0;
+  z-index: 3;
   display: flex;
   align-items: baseline;
-  gap: 1.1em;
-  /* clears the portrait + colored band baked into the row image */
-  padding-left: 28%;
-  font-size: clamp(0.8rem, 1.9vw, 1.25rem);
+  gap: 2%;
+  padding-right: 6%;
+  font-size: calc(var(--skill-row-h) * 0.6);
+  line-height: 1;
   color: #fff;
-  z-index: 3;
+}
+
+/* zero-width strut — under align-items:baseline a flex item with no line boxes
+   takes its bottom edge as its baseline, so this pins the shared text baseline
+   78% down the row instead of letting the group ride the top edge */
+.skill-row-content::before {
+  content: '';
+  width: 0;
+  height: 78%;
 }
 
 .skill-row-name {
+  flex: 1;
+  text-align: right;
   font-family: 'Eurostile Extended', 'Arial Narrow', sans-serif;
   font-weight: 900;
   font-style: normal;
-  font-size: 1.3em;
   letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
-.skill-row-level {
-  font-weight: 900;
+.skill-row-slash {
+  font-weight: 300;
   font-style: italic;
-  font-size: 0.85em;
+  font-size: 1.15em;
 }
 
-.skill-row-level-label {
-  margin-right: 0.2em;
-  font-family: Arial, Helvetica, sans-serif;
-  font-weight: 400;
-  font-style: normal;
-  font-size: 0.7em;
-  color: #b8b8b8;
+/* fixed-width cells so Lv/HP/SP line up column-wise down the whole list */
+.skill-row-level {
+  flex: 0 0 8%;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .skill-row-stat {
-  font-weight: 900;
-  font-style: italic;
-  font-size: 0.95em;
+  flex: 0 0 15%;
+  text-align: right;
+  white-space: nowrap;
 }
 
+.skill-row-level-value,
+.skill-row-stat-value {
+  font-weight: 900;
+  font-style: italic;
+  font-size: 0.94em;
+}
+
+.skill-row-stat-value {
+  text-decoration: underline;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.08em;
+}
+
+.skill-row-level-label,
 .skill-row-stat-label {
-  margin-right: 0.15em;
+  margin-right: 0.12em;
   font-family: Arial, Helvetica, sans-serif;
   font-weight: 400;
   font-style: normal;
-  font-size: 0.55em;
-  color: #b8b8b8;
+  font-size: 0.38em;
+  color: #cfcfcf;
 }
 
 .skill-row-stat--hp {
   color: #2fd8e6;
-  text-decoration: underline;
-  text-decoration-thickness: 0.12em;
-  text-underline-offset: 0.1em;
 }
 
 .skill-row-stat--sp {
   color: #d9dd4f;
-  text-decoration: underline;
-  text-decoration-thickness: 0.12em;
-  text-underline-offset: 0.1em;
 }
 
-.skill-row.is-leader {
-  outline: 3px solid #e3123b;
-  outline-offset: -3px;
+/* leader highlight. an outline/border can't be used: it would draw a straight
+   right edge and ignore the bar's slanted cut. instead one polygon traces the
+   cut clockwise, seams back to the origin, then retraces it inset by the border
+   width counter-clockwise — the nonzero fill rule cancels the interior and
+   leaves the outline, and the seam has zero width so it never shows */
+.skill-row.is-leader::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: #e3123b;
+  clip-path: polygon(
+    0 0,
+    var(--skill-row-cut-top) 0,
+    var(--skill-row-cut-bottom) 100%,
+    0 100%,
+    0 0,
+    var(--skill-row-border) var(--skill-row-border),
+    var(--skill-row-border) calc(100% - var(--skill-row-border)),
+    calc(var(--skill-row-cut-bottom) - var(--skill-row-border)) calc(100% - var(--skill-row-border)),
+    calc(var(--skill-row-cut-top) - var(--skill-row-border)) var(--skill-row-border),
+    var(--skill-row-border) var(--skill-row-border)
+  );
 }
 
 /* vertical ribbon along the left edge, over the portrait — LEADER on the
-   lead unit's row, PARTY on the other units currently in the active party */
+   lead unit's row, PARTY on the other units currently in the active party.
+   z-index 1 keeps it under the artwork so the head clips into the word, the
+   way the source UI does */
 .skill-row-tag {
   position: absolute;
   top: 50%;
-  left: 30px;
+  left: 7%;
   z-index: 1;
-  font-weight: 800;
-  transform: rotate(-25deg) scaleX(50%) translateX(-50%) translateY(-100%);
+  transform: translate(-50%, -50%) rotate(-33deg) scaleX(0.55);
   font-family: 'Eurostile Extended', 'Arial Narrow', sans-serif;
-  font-size: 2.5rem;
-  letter-spacing: 0.05em;
+  font-weight: 800;
+  font-size: calc(var(--skill-row-h) * 0.34);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
   color: #fff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
