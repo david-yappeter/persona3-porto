@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { MenuBackground } from '../../components/MenuBackground'
+import { ThreeCard } from '../../components/ThreeCard'
 import { EXPERIENCE } from '../../data/experience'
 import './SkillDetail.css'
 
@@ -61,6 +62,12 @@ export const SkillDetail = () => {
               <span key={s} className="skill-detail-star" />
             ))}
           </div>
+        </div>
+
+        {/* floating card, center of the screen like the source UI — re-keyed
+            per entry so the flip-in replays fresh each time Left/Right cycles */}
+        <div className="skill-detail-card-stage">
+          <ThreeCard key={i} title={exp.title} subtitle={exp.company} />
         </div>
 
         <div className="skill-detail-body">

@@ -2,7 +2,6 @@ import { createBrowserRouter } from 'react-router'
 import { RootLayout } from './layouts/RootLayout'
 import { MainMenu } from './pages/MainMenu'
 import { Skill } from './pages/Skill'
-import { SkillDetail } from './pages/SkillDetail'
 
 export const router = createBrowserRouter(
   [
@@ -12,7 +11,12 @@ export const router = createBrowserRouter(
       children: [
         { index: true, Component: MainMenu },
         { path: 'skill', Component: Skill },
-        { path: 'skill/:index', Component: SkillDetail },
+        {
+          path: 'skill/:index',
+          /* three.js (~500KB) only needed here — code-split so every other
+             route doesn't pay for it upfront */
+          lazy: () => import('./pages/SkillDetail').then((m) => ({ Component: m.SkillDetail })),
+        },
       ],
     },
   ],

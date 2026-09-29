@@ -1,0 +1,12 @@
+.three-card {
+  width: 100%;
+  height: 100%;
+  /* decorative — never intercepts clicks/keyboard, the page underneath does */
+  pointer-events: none;
+}
+
+.three-card canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
