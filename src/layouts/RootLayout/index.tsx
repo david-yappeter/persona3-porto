@@ -4,6 +4,7 @@ import { CommandHint } from '../../components/CommandHint'
 import { MusicPlayer } from '../../components/MusicPlayer'
 import { PageTransition } from '../../components/PageTransition'
 import { RouteTransition, RouteTransitionKind } from '../../components/RouteTransition'
+import { useBackNavigation } from '../../hooks/BackNavigation'
 import { useNavigationSound } from '../../hooks/NavigationSound'
 import './RootLayout.css'
 
@@ -16,6 +17,7 @@ import './RootLayout.css'
  */
 export const RootLayout = () => {
   useNavigationSound()
+  useBackNavigation()
   const location = useLocation()
   /* "/" has its own reveal now — the entrance video + menu row fade-in
      (see MainMenu) — so the ripple only plays landing cold on any other

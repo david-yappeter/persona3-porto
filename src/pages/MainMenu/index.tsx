@@ -18,7 +18,7 @@ const landedOnHomeOnBoot = window.location.pathname === import.meta.env.BASE_URL
 let consumed = false
 
 export const MainMenu = () => {
-  const { selected, setSelected } = useMenuNavigation(MENU_ITEMS.length)
+  const { selected, moveTo } = useMenuNavigation(MENU_ITEMS.length)
   const [playEntrance] = useState(() => {
     if (!landedOnHomeOnBoot || consumed) return false
     consumed = true
@@ -28,7 +28,7 @@ export const MainMenu = () => {
   return (
     <>
       <MenuBackground entranceSrc={playEntrance ? ENTRANCE_SRC : undefined} />
-      <MenuList items={MENU_ITEMS} selected={selected} onSelect={setSelected} animateIn={playEntrance} />
+      <MenuList items={MENU_ITEMS} selected={selected} onSelect={moveTo} animateIn={playEntrance} />
     </>
   )
 }
