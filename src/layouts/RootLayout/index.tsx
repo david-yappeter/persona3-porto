@@ -4,7 +4,6 @@ import { CommandHint } from '../../components/CommandHint'
 import { MusicPlayer } from '../../components/MusicPlayer'
 import { PageTransition } from '../../components/PageTransition'
 import { RouteTransition, RouteTransitionKind } from '../../components/RouteTransition'
-import { WalletBox } from '../../components/WalletBox'
 import { useNavigationSound } from '../../hooks/NavigationSound'
 import './RootLayout.css'
 
