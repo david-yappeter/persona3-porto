@@ -36,3 +36,21 @@
   font-size: 0.9rem;
   color: #9fdcec;
 }
+
+.asset-preloader-prompt {
+  font-family: 'Eurostile Extended', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  color: #9fdcec;
+  animation: asset-preloader-prompt-blink 1.2s ease-in-out infinite;
+}
+
+@keyframes asset-preloader-prompt-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
