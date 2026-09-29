@@ -4,6 +4,9 @@ export type Experience = {
   company: string
   period: string
   current?: boolean
+  /** full-body portrait shown on the detail page — only cropped for a few
+      entries so far, see public/assets/head_row_*_portrait.png */
+  portraitSrc?: string
 }
 
 export const EXPERIENCE: Experience[] = [
@@ -13,6 +16,7 @@ export const EXPERIENCE: Experience[] = [
     company: 'GDP Labs, Jakarta',
     period: 'Jun 2025 - Now',
     current: true,
+    portraitSrc: `${import.meta.env.BASE_URL}assets/head_row_1_portrait.png`,
   },
   {
     headSrc: `${import.meta.env.BASE_URL}assets/head_row_2_colored.png`,
