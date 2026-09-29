@@ -1,10 +1,48 @@
 import { useNavigate } from 'react-router'
 import { MenuBackground } from '../../components/MenuBackground'
 import { SkillRow } from '../../components/SkillRow'
+import { useMenuNavigation } from '../../hooks/MenuNavigation'
+
+type Experience = {
+  headSrc: string
+  title: string
+  company: string
+  period: string
+  current?: boolean
+}
+
+const EXPERIENCE: Experience[] = [
+  {
+    headSrc: `${import.meta.env.BASE_URL}assets/head_row_1_colored.png`,
+    title: 'Software Development Engineer',
+    company: 'GDP Labs, Jakarta',
+    period: 'Jun 2025 - Now',
+    current: true,
+  },
+  {
+    headSrc: `${import.meta.env.BASE_URL}assets/head_row_2_colored.png`,
+    title: 'Backend Developer',
+    company: 'GWS Medika (Sinarmas Group), Medan',
+    period: 'Oct 2022 - Feb 2025',
+  },
+  {
+    headSrc: `${import.meta.env.BASE_URL}assets/head_row_3_colored.png`,
+    title: 'Software Development Engineer',
+    company: 'Two Miner Pte. Ltd., Medan',
+    period: 'Jan 2022 - Sep 2022',
+  },
+  {
+    headSrc: `${import.meta.env.BASE_URL}assets/head_row_4_colored.png`,
+    title: 'Backend Developer',
+    company: 'PT. Pundi Mas Berjaya, Medan',
+    period: 'Jul 2020 - Jan 2022',
+  },
+]
 
 /* placeholder page, just to exercise the page transition */
 export const Skill = () => {
   const navigate = useNavigate()
+  const { selected } = useMenuNavigation(EXPERIENCE.length)
 
   return (
     <>
@@ -12,10 +50,9 @@ export const Skill = () => {
       {/* position+z-index needed so this stacks above MenuBackground's
           un-z-indexed absolute layers, which would otherwise paint over it */}
       <div style={{ position: 'relative', zIndex: 1, height: '100%', padding: '2rem', paddingTop: '7rem' }}>
-        <SkillRow headSrc={`${import.meta.env.BASE_URL}assets/head_row_1_colored.png`} name="Makoto" level={42} hp={395} sp={235} tag="leader" />
-        <SkillRow headSrc={`${import.meta.env.BASE_URL}assets/head_row_2_colored.png`} name="Yukari" level={40} hp={293} sp={261} />
-        <SkillRow headSrc={`${import.meta.env.BASE_URL}assets/head_row_3_colored.png`} name="Junpei" level={39} hp={338} sp={194} />
-        <SkillRow headSrc={`${import.meta.env.BASE_URL}assets/head_row_4_colored.png`} name="Akihiko" level={38} hp={362} sp={209} tag="party" />
+        {EXPERIENCE.map((exp, i) => (
+          <SkillRow key={exp.company} {...exp} selected={i === selected} />
+        ))}
         <button
           style={{
             marginTop: '2rem',

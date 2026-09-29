@@ -1,0 +1,1 @@
+export { useFitText } from './useFitText'

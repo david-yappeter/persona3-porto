@@ -7,8 +7,8 @@
   --skill-row-cut-top: 99.7%;
   --skill-row-cut-bottom: 95.5%;
   --skill-row-border: 3px;
-  /* the bar outline itself — reused verbatim as the outer ring of .is-leader's
-     border so the black bar and the red highlight share one silhouette */
+  /* the bar outline itself — reused verbatim as the outer ring of .is-selected's
+     border so the black bar and the red cursor share one silhouette */
   --skill-row-shape: polygon(
     0 0,
     var(--skill-row-cut-top) 0,
@@ -43,7 +43,7 @@
   inset: 0;
   z-index: 3;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 2%;
   padding-right: 6%;
   font-size: calc(var(--skill-row-h) * 0.6);
@@ -51,81 +51,56 @@
   color: #fff;
 }
 
-/* zero-width strut — under align-items:baseline a flex item with no line boxes
-   takes its bottom edge as its baseline, so this pins the shared text baseline
-   78% down the row instead of letting the group ride the top edge */
-.skill-row-content::before {
-  content: '';
-  width: 0;
-  height: 78%;
+.skill-row-title-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  min-width: 0;
 }
 
 .skill-row-name {
-  flex: 1;
-  text-align: right;
   font-family: 'Eurostile Extended', 'Arial Narrow', sans-serif;
   font-weight: 900;
   font-style: normal;
+  font-size: 0.44em;
   letter-spacing: 0.01em;
   white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
 }
 
-.skill-row-slash {
-  font-weight: 300;
-  font-style: italic;
-  font-size: 1.15em;
-}
-
-/* fixed-width cells so Lv/HP/SP line up column-wise down the whole list */
-.skill-row-level {
-  flex: 0 0 8%;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.skill-row-stat {
-  flex: 0 0 15%;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.skill-row-level-value,
-.skill-row-stat-value {
-  font-weight: 900;
-  font-style: italic;
-  font-size: 0.94em;
-}
-
-.skill-row-stat-value {
-  text-decoration: underline;
-  text-decoration-thickness: 0.1em;
-  text-underline-offset: 0.08em;
-}
-
-.skill-row-level-label,
-.skill-row-stat-label {
-  margin-right: 0.12em;
+.skill-row-company {
   font-family: Arial, Helvetica, sans-serif;
   font-weight: 400;
   font-style: normal;
-  font-size: 0.38em;
+  font-size: 0.24em;
+  letter-spacing: 0.01em;
+  color: #cfcfcf;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+/* fixed-width cell so the dates line up column-wise down the whole list */
+.skill-row-period {
+  flex: 0 0 28%;
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 900;
+  font-style: italic;
+  font-size: 0.4em;
   color: #cfcfcf;
 }
 
-.skill-row-stat--hp {
-  color: #2fd8e6;
-}
-
-.skill-row-stat--sp {
-  color: #d9dd4f;
-}
-
-/* leader highlight. an outline/border can't be used: it would draw a straight
-   right edge and ignore the bar's slanted cut. instead one polygon traces the
-   cut clockwise, seams back to the origin, then retraces it inset by the border
-   width counter-clockwise — the nonzero fill rule cancels the interior and
-   leaves the outline, and the seam has zero width so it never shows */
-.skill-row.is-leader::after {
+/* keyboard cursor highlight — the row the up/down selection is currently on.
+   an outline/border can't be used: it would draw a straight right edge and
+   ignore the bar's slanted cut. instead one polygon traces the cut clockwise,
+   seams back to the origin, then retraces it inset by the border width
+   counter-clockwise — the nonzero fill rule cancels the interior and leaves
+   the outline, and the seam has zero width so it never shows */
+.skill-row.is-selected::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -146,10 +121,9 @@
   );
 }
 
-/* vertical ribbon along the left edge, over the portrait — LEADER on the
-   lead unit's row, PARTY on the other units currently in the active party.
-   z-index 1 keeps it under the artwork so the head clips into the word, the
-   way the source UI does */
+/* vertical ribbon along the left edge, over the portrait — shows "Current"
+   on the job in progress. z-index 1 keeps it under the artwork so the head
+   clips into the word, the way the source UI does */
 .skill-row-tag {
   position: absolute;
   top: 50%;
