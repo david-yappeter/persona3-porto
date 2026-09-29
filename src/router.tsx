@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router'
 import { RootLayout } from './layouts/RootLayout'
 import { MainMenu } from './pages/MainMenu'
 import { Skill } from './pages/Skill'
+import { SkillDetail } from './pages/SkillDetail'
 
 export const router = createBrowserRouter(
   [
@@ -11,6 +12,7 @@ export const router = createBrowserRouter(
       children: [
         { index: true, Component: MainMenu },
         { path: 'skill', Component: Skill },
+        { path: 'skill/:index', Component: SkillDetail },
       ],
     },
   ],

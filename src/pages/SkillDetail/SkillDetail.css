@@ -1,0 +1,156 @@
+.skill-detail {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 2rem 2.5rem;
+  color: #fff;
+  font-family: 'Eurostile Extended', 'Arial Narrow', sans-serif;
+}
+
+/* --- header: L/R cycle hints either side of the section title --- */
+.skill-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.skill-detail-nav {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #cfeeff;
+  opacity: 0.85;
+}
+
+.skill-detail-title-wrap {
+  flex: 1;
+  background: #000;
+  clip-path: polygon(0 0, 100% 0, 96% 100%, 0% 100%);
+  padding: 0.4em 1.2em;
+}
+
+.skill-detail-title {
+  font-size: 2.4rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.03em;
+  color: #fff;
+}
+
+/* --- meta block: eyebrow / arcana name / rank / stars --- */
+.skill-detail-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3em;
+  margin-top: 1.5rem;
+}
+
+.skill-detail-eyebrow {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9fdcec;
+}
+
+.skill-detail-arcana {
+  font-size: 3rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+
+.skill-detail-rank {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  margin-top: 0.2em;
+}
+
+.skill-detail-rank-label {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #cfcfcf;
+}
+
+.skill-detail-rank-value {
+  font-size: 2.2rem;
+  font-weight: 900;
+  font-style: italic;
+}
+
+.skill-detail-stars {
+  display: flex;
+  gap: 0.3em;
+}
+
+.skill-detail-star {
+  width: 0.9rem;
+  height: 0.9rem;
+  background: #4a4a5a;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+/* --- body: description + portrait slot + name/role --- */
+.skill-detail-body {
+  position: relative;
+  flex: 1;
+  margin-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+/* pinned under the arcana/rank block, well clear of the music player's
+   fixed panel in the bottom-left corner — not bottom-aligned like the
+   portrait/name, which live on the opposite, unobstructed side */
+.skill-detail-description {
+  max-width: 32ch;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  color: #eef6fb;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* placeholder for the character art — intentionally empty, see feature
+   request; sized/positioned to roughly match where the source UI's portrait
+   sits so swapping in a real image later is a drop-in */
+.skill-detail-portrait {
+  position: absolute;
+  right: 4%;
+  bottom: 0;
+  width: min(42%, 420px);
+  height: 85%;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.skill-detail-person {
+  position: absolute;
+  right: 4%;
+  bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  gap: 0.15em;
+  max-width: 40%;
+}
+
+.skill-detail-person-name {
+  font-size: 2rem;
+  font-weight: 900;
+  font-style: italic;
+  color: #9fe8ff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.skill-detail-person-role {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1rem;
+  color: #eef6fb;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
