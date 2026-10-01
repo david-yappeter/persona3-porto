@@ -1,5 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
+
+const SOUND_BACK = `${import.meta.env.BASE_URL}sound/deck_ui_out_of_game_detail.wav`
 
 /** Backspace/Escape go back one level — real browser history back when this
     tab actually navigated here in-app (so /skill/2 -> /skill -> / unwinds
@@ -10,6 +12,13 @@ export const useBackNavigation = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
+  const backSoundRef = useRef<HTMLAudioElement | null>(null)
+  useEffect(() => {
+    const sound = new Audio(SOUND_BACK)
+    sound.preload = 'auto'
+    backSoundRef.current = sound
+  }, [])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Backspace' && e.key !== 'Escape') return
@@ -18,6 +27,12 @@ export const useBackNavigation = () => {
       if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
       if (location.pathname === '/') return
       e.preventDefault()
+
+      const sound = backSoundRef.current
+      if (sound) {
+        sound.currentTime = 0
+        void sound.play().catch(() => {})
+      }
 
       if (location.key === 'default') {
         const parent = location.pathname.replace(/\/[^/]+\/?$/, '') || '/'

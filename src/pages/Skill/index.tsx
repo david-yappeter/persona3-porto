@@ -1,14 +1,23 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import { MenuBackground } from '../../components/MenuBackground'
 import { SkillRow } from '../../components/SkillRow'
 import { EXPERIENCE } from '../../data/experience'
 import { useMenuNavigation } from '../../hooks/MenuNavigation'
 
+const SOUND_CONFIRM = `${import.meta.env.BASE_URL}sound/deck_ui_into_game_detail.wav`
+
 /* placeholder page, just to exercise the page transition */
 export const Skill = () => {
   const navigate = useNavigate()
   const { selected } = useMenuNavigation(EXPERIENCE.length)
+
+  const confirmSoundRef = useRef<HTMLAudioElement | null>(null)
+  useEffect(() => {
+    const sound = new Audio(SOUND_CONFIRM)
+    sound.preload = 'auto'
+    confirmSoundRef.current = sound
+  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -16,6 +25,11 @@ export const Skill = () => {
       const active = document.activeElement
       if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
       e.preventDefault()
+      const sound = confirmSoundRef.current
+      if (sound) {
+        sound.currentTime = 0
+        void sound.play().catch(() => {})
+      }
       void navigate(`/skill/${selected}`)
     }
     window.addEventListener('keydown', onKey)
