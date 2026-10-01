@@ -107,30 +107,24 @@
   }
 }
 
-/* --- panel: black category strip + white arcana/rank/stars strip, cut as
-   one skewed shape (clip-path on the outer box) so the slanted edge lines
-   up across both tones instead of each strip skewing on its own. Fixed
-   size rather than content-fit, so cycling entries never resizes the box —
-   only what's inside it changes. */
+/* --- panel: black company strip + white position/period strip, cut as one
+   skewed shape (clip-path on the outer box) so the slanted edge lines up
+   across both tones instead of each strip skewing on its own. Fixed size
+   rather than content-fit, so cycling entries never resizes the box — only
+   what's inside it changes.
+
+   The box itself is nudged left, bleeding a little past the screen edge —
+   but that transform carries the text with it too, so each text group gets
+   the exact opposite translateX to cancel it out and stay put. */
 .skill-detail-panel {
-  width: 34rem;
+  --panel-bleed: 1.5rem;
+  width: 48rem;
   height: 11rem;
-  margin-top: 0;
+  margin: 1.2rem 3rem 1.8rem 0;
   display: flex;
   flex-direction: column;
   clip-path: polygon(0 0, 100% 0, 94% 100%, 0% 100%);
-  /* replays on every Left/Right cycle via key={i} — a quick 10px nudge
-     rather than a slide, just enough to read as "this changed" */
-  animation: skill-detail-panel-shift 0.1s ease-out;
-}
-
-@keyframes skill-detail-panel-shift {
-  from {
-    transform: translateX(-10px);
-  }
-  to {
-    transform: translateX(0);
-  }
+  transform: translateX(calc(var(--panel-bleed) * -1));
 }
 
 .skill-detail-panel-top {
@@ -144,41 +138,36 @@
 }
 
 .skill-detail-eyebrow {
+  display: inline-block;
   font-size: 1.15rem;
   font-weight: 700;
   font-style: italic;
   letter-spacing: 0.02em;
   color: #fff;
+  transform: translateX(var(--panel-bleed));
 }
 
 .skill-detail-panel-bottom {
   flex: 1;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  justify-content: center;
   background: #fff;
   color: #0a0a0a;
-  padding: 0.8em 1.6em 0.9em 2.2em;
+  padding: 0.5em 1.6em 0.6em 2.2em;
 }
 
-.skill-detail-panel-bottom-main {
-  min-width: 0;
+.skill-detail-panel-bottom-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  transform: translateX(var(--panel-bleed));
 }
 
-.skill-detail-arcana-tag {
-  display: block;
-  transform: skewX(-12deg);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: #0a0a0a;
-}
-
-.skill-detail-arcana {
+.skill-detail-position {
   display: block;
   max-width: 100%;
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 900;
   font-style: italic;
   letter-spacing: 0.01em;
@@ -186,38 +175,11 @@
   overflow: hidden;
 }
 
-.skill-detail-rank {
-  flex-shrink: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 0.3em;
-  padding-top: 0.3em;
-}
-
-.skill-detail-rank-label {
-  font-size: 0.9rem;
+.skill-detail-period {
+  font-size: 1rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #4a4a4a;
-}
-
-.skill-detail-rank-value {
-  font-size: 2.6rem;
-  font-weight: 900;
-  font-style: italic;
-}
-
-.skill-detail-stars {
-  display: flex;
-  gap: 0.3em;
-  margin-top: 0.3em;
-}
-
-.skill-detail-star {
-  width: 0.9rem;
-  height: 0.9rem;
-  background: #d0d0d0;
-  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  letter-spacing: 0.04em;
+  color: #5a5a5a;
 }
 
 /* the floating 3D card — centered over the page like the source UI, behind
@@ -246,15 +208,27 @@
    fixed panel in the bottom-left corner — not bottom-aligned like the
    portrait/name, which live on the opposite, unobstructed side */
 .skill-detail-description {
-  max-width: 32ch;
+  max-width: 50ch;
   margin-left: 1.6rem;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 1.15rem;
+  font-size: 1.5rem;
   font-weight: 700;
   font-style: italic;
   line-height: 1.5;
   color: #eef6fb;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  /* replays on every Left/Right cycle via key={i} — a quick 10px nudge
+     rather than a slide, just enough to read as "this changed" */
+  animation: skill-detail-description-shift 0.1s ease-out;
+}
+
+@keyframes skill-detail-description-shift {
+  from {
+    transform: translateX(-10px);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 /* placeholder for the character art — intentionally empty, see feature

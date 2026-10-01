@@ -6,7 +6,6 @@ import { EXPERIENCE } from '../../data/experience'
 import { useFitText } from '../../hooks/FitText'
 import './SkillDetail.css'
 
-const STAR_COUNT = 10
 const SOUND_SWITCH = `${import.meta.env.BASE_URL}sound/deck_ui_volume.wav`
 
 /* text content is all placeholder for now — layout/style only, see the
@@ -51,7 +50,7 @@ export const SkillDetail = () => {
   }, [])
 
   const exp = EXPERIENCE[validInitial ? i : 0]
-  const arcanaRef = useFitText(exp.title)
+  const positionRef = useFitText(exp.title)
 
   if (!validInitial) return null
 
@@ -73,28 +72,19 @@ export const SkillDetail = () => {
           </span>
         </div>
 
-        {/* skewed two-tone panel: black category strip on top, white
-            arcana/rank/stars strip below — one clipped shape rather than two
-            separately-skewed boxes, so the cut edge lines up across both */}
-        <div className="skill-detail-panel" key={i}>
+        {/* skewed two-tone panel: black category strip on top, white accent
+            strip below — one clipped shape rather than two separately-skewed
+            boxes, so the cut edge lines up across both */}
+        <div className="skill-detail-panel">
           <div className="skill-detail-panel-top">
             <span className="skill-detail-eyebrow">{exp.company}</span>
           </div>
           <div className="skill-detail-panel-bottom">
-            <div className="skill-detail-panel-bottom-main">
-              <span className="skill-detail-arcana-tag">ARCANA</span>
-              <span ref={arcanaRef} className="skill-detail-arcana">
+            <div className="skill-detail-panel-bottom-content">
+              <span ref={positionRef} className="skill-detail-position">
                 {exp.title}
               </span>
-              <div className="skill-detail-stars" aria-hidden="true">
-                {Array.from({ length: STAR_COUNT }, (_, s) => (
-                  <span key={s} className="skill-detail-star" />
-                ))}
-              </div>
-            </div>
-            <div className="skill-detail-rank">
-              <span className="skill-detail-rank-label">RANK</span>
-              <span className="skill-detail-rank-value">0</span>
+              <span className="skill-detail-period">{exp.period}</span>
             </div>
           </div>
         </div>
@@ -106,8 +96,8 @@ export const SkillDetail = () => {
         </div>
 
         <div className="skill-detail-body">
-          <p className="skill-detail-description">
-            Placeholder description text goes here — a short write-up for this entry will go in this spot.
+          <p className="skill-detail-description" key={i}>
+            {exp.description}
           </p>
 
           {/* character art slot — empty dashed placeholder until an entry
