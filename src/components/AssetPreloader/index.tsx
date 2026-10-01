@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { PRELOAD_MANIFEST } from './manifest'
 import { usePreloadAssets } from './usePreloadAssets'
 import './AssetPreloader.css'
@@ -49,6 +49,20 @@ export const AssetPreloader = ({ children }: AssetPreloaderProps) => {
       <div className="asset-preloader">
         <div className="asset-preloader-label">READY</div>
         <div className="asset-preloader-prompt">Click or press any key to continue</div>
+        <ul className="asset-preloader-guide">
+          <li style={{ '--i': 0 } as CSSProperties}>
+            <span className="asset-preloader-guide-key">↑ ↓ ← →</span>
+            <span className="asset-preloader-guide-label">Navigate</span>
+          </li>
+          <li style={{ '--i': 1 } as CSSProperties}>
+            <span className="asset-preloader-guide-key">Click / Enter</span>
+            <span className="asset-preloader-guide-label">Select</span>
+          </li>
+          <li style={{ '--i': 2 } as CSSProperties}>
+            <span className="asset-preloader-guide-key">Esc / Backspace</span>
+            <span className="asset-preloader-guide-label">Back</span>
+          </li>
+        </ul>
       </div>
     )
   }

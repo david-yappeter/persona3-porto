@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { MenuBackground } from '../../components/MenuBackground'
 import { ThreeCard } from '../../components/ThreeCard'
@@ -77,10 +78,12 @@ export const SkillDetail = () => {
             boxes, so the cut edge lines up across both */}
         <div className="skill-detail-panel">
           <div className="skill-detail-panel-top">
-            <span className="skill-detail-eyebrow">{exp.company}</span>
+            <span className="skill-detail-eyebrow" key={i}>
+              {exp.company}
+            </span>
           </div>
           <div className="skill-detail-panel-bottom">
-            <div className="skill-detail-panel-bottom-content">
+            <div className="skill-detail-panel-bottom-content" key={i}>
               <span ref={positionRef} className="skill-detail-position">
                 {exp.title}
               </span>
@@ -96,9 +99,13 @@ export const SkillDetail = () => {
         </div>
 
         <div className="skill-detail-body">
-          <p className="skill-detail-description" key={i}>
-            {exp.description}
-          </p>
+          <ul className="skill-detail-description" key={i}>
+            {exp.description.map((line, lineIndex) => (
+              <li key={lineIndex} style={{ '--i': lineIndex } as CSSProperties}>
+                {line}
+              </li>
+            ))}
+          </ul>
 
           {/* character art slot — empty dashed placeholder until an entry
               has its own cropped portrait, see data/experience.ts */}

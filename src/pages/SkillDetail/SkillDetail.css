@@ -144,7 +144,9 @@
   font-style: italic;
   letter-spacing: 0.02em;
   color: #fff;
-  transform: translateX(var(--panel-bleed));
+  /* replays on every Left/Right cycle via key={i} — settles on the same
+     counter-shift that keeps it visually in place against the panel's bleed */
+  animation: skill-detail-panel-text-in 0.3s ease-out;
 }
 
 .skill-detail-panel-bottom {
@@ -161,7 +163,18 @@
   display: flex;
   flex-direction: column;
   gap: 0.25em;
-  transform: translateX(var(--panel-bleed));
+  animation: skill-detail-panel-text-in 0.3s ease-out;
+}
+
+@keyframes skill-detail-panel-text-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--panel-bleed) - 14px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(var(--panel-bleed));
+  }
 }
 
 .skill-detail-position {
@@ -208,25 +221,52 @@
    fixed panel in the bottom-left corner — not bottom-aligned like the
    portrait/name, which live on the opposite, unobstructed side */
 .skill-detail-description {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
   max-width: 50ch;
-  margin-left: 1.6rem;
+  margin: 0 0 0 1.6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.skill-detail-description li {
+  position: relative;
+  padding-left: 1.4em;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 1.5rem;
   font-weight: 700;
   font-style: italic;
-  line-height: 1.5;
+  line-height: 1.4;
   color: #eef6fb;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-  /* replays on every Left/Right cycle via key={i} — a quick 10px nudge
-     rather than a slide, just enough to read as "this changed" */
-  animation: skill-detail-description-shift 0.1s ease-out;
+  opacity: 0;
+  /* replays on every Left/Right cycle via key={i} on the parent <ul> —
+     each line staggers in rather than popping together */
+  animation: skill-detail-description-in 0.35s ease-out forwards;
+  animation-delay: calc(var(--i) * 0.1s);
 }
 
-@keyframes skill-detail-description-shift {
+/* angled chevron marker instead of a plain dot, echoing the L/R nav glyph */
+.skill-detail-description li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.4em;
+  width: 0.55em;
+  height: 0.55em;
+  background: #e3123b;
+  border: 2px solid #9fe8ff;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+@keyframes skill-detail-description-in {
   from {
-    transform: translateX(-10px);
+    opacity: 0;
+    transform: translateX(-14px);
   }
   to {
+    opacity: 1;
     transform: translateX(0);
   }
 }

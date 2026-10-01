@@ -39,9 +39,13 @@
 
 .asset-preloader-prompt {
   font-family: 'Eurostile Extended', sans-serif;
-  font-size: 1rem;
-  letter-spacing: 0.08em;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: #9fdcec;
+  text-shadow: 0 0 14px rgba(89, 216, 242, 0.6);
   animation: asset-preloader-prompt-blink 1.2s ease-in-out infinite;
 }
 
@@ -52,5 +56,58 @@
   }
   50% {
     opacity: 0.35;
+  }
+}
+
+.asset-preloader-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  margin: 1.8em 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.asset-preloader-guide li {
+  display: flex;
+  align-items: center;
+  gap: 1.3em;
+  opacity: 0;
+  animation: asset-preloader-guide-in 0.4s ease-out forwards;
+  animation-delay: calc(var(--i) * 0.12s);
+}
+
+.asset-preloader-guide-key {
+  min-width: 11em;
+  padding: 0.5em 1.2em;
+  text-align: center;
+  font-family: 'Eurostile Extended', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.03em;
+  color: #fff;
+  background: linear-gradient(100deg, #e3123b, #a60a2a);
+  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+  box-shadow: 0 2px 10px rgba(227, 18, 59, 0.45);
+}
+
+.asset-preloader-guide-label {
+  font-family: 'Eurostile Extended', sans-serif;
+  font-size: 1.15rem;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(238, 246, 251, 0.85);
+}
+
+@keyframes asset-preloader-guide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }

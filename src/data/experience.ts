@@ -4,7 +4,7 @@ export type Experience = {
   company: string
   period: string
   current?: boolean
-  description: string
+  description: string[]
   /** full-body portrait shown on the detail page — only cropped for a few
       entries so far, see public/assets/head_row_*_portrait.png */
   portraitSrc?: string
@@ -17,8 +17,11 @@ export const EXPERIENCE: Experience[] = [
     company: 'GDP Labs, Jakarta',
     period: 'Jun 2025 - Now',
     current: true,
-    description:
-      'Backend engineer on an enterprise multi-tenant agentic AI chatbot platform, wiring up RAG pipelines, document processing, AI agents, and connectors. Also built a small Golang + React workflow to automate coding-test grading.',
+    description: [
+      'Backend engineer on an enterprise multi-tenant agentic AI chatbot platform.',
+      'Wired up RAG pipelines, document processing, AI agents, and connectors.',
+      'Built a Golang + React workflow to automate coding-test grading.',
+    ],
     portraitSrc: `${import.meta.env.BASE_URL}assets/head_row_1_portrait.png`,
   },
   {
@@ -26,23 +29,31 @@ export const EXPERIENCE: Experience[] = [
     title: 'Backend Developer',
     company: 'GWS Medika (Sinarmas Group), Medan',
     period: 'Oct 2022 - Feb 2025',
-    description:
-      'Built a full-stack clinic management system from scratch for retail and medical clinic operations — patient registration, queue management, appointment scheduling, billing, and medical records. Also shipped a bilingual CMS for the landing page.',
+    description: [
+      'Built a full-stack clinic management system from scratch.',
+      'Covered patient registration, queue management, appointment scheduling, billing, and medical records.',
+      'Shipped a bilingual CMS for the landing page.',
+    ],
   },
   {
     headSrc: `${import.meta.env.BASE_URL}assets/head_row_3_colored.png`,
     title: 'Software Development Engineer',
     company: 'Two Miner Pte. Ltd., Medan',
     period: 'Jan 2022 - Sep 2022',
-    description:
-      'Developed fitness website features and an appointment booking system using Next.js, and customized WordPress sites to match client requirements.',
+    description: [
+      'Developed fitness website features and an appointment booking system using Next.js.',
+      'Customized WordPress sites to match client requirements.',
+    ],
   },
   {
     headSrc: `${import.meta.env.BASE_URL}assets/head_row_4_colored.png`,
     title: 'Backend Developer',
     company: 'PT. Pundi Mas Berjaya, Medan',
     period: 'Jul 2020 - Jan 2022',
-    description:
-      'Built an accounting module on a microservices architecture with gRPC, and a POS system exposing both REST and GraphQL APIs. Integrated third-party APIs and optimized SQL queries for data transport.',
+    description: [
+      'Built an accounting module on a microservices architecture with gRPC.',
+      'Built a POS system exposing both REST and GraphQL APIs.',
+      'Integrated third-party APIs and optimized SQL queries for data transport.',
+    ],
   },
 ]
