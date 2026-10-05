@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { SocialLinkScene, type CardFace, type CardState } from '../../components/SocialLinkScene'
+import { SocialLinkScene, type CardFace } from '../../components/SocialLinkScene'
 import { EXPERIENCE } from '../../data/experience'
 import { useFitText } from '../../hooks/FitText'
 import { playSfx } from '../../utils/sfx'
@@ -50,15 +50,6 @@ export const SkillDetail = () => {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  /* card starts gripped at the chest, then drops onto its lanyard — the
-     list-to-detail moment from the source. Delayed past the route
-     transition's reveal so the drop is actually on screen. */
-  const [cardState, setCardState] = useState<CardState>('held')
-  useEffect(() => {
-    const id = window.setTimeout(() => setCardState('dangling'), 900)
-    return () => window.clearTimeout(id)
-  }, [])
-
   const exp = EXPERIENCE[validInitial ? i : 0]
   const positionRef = useFitText(exp.title)
   const cardIndex = validInitial ? i : 0
@@ -77,7 +68,7 @@ export const SkillDetail = () => {
 
   return (
     <>
-      <SocialLinkScene card={card} cardState={cardState} />
+      <SocialLinkScene card={card} cardState="held" />
       <div className="skill-detail">
         <div className="skill-detail-header">
           <span className="skill-detail-nav">

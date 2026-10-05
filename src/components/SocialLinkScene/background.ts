@@ -108,6 +108,8 @@ export const createBackground = (scene: THREE.Scene) => {
 
   scene.background = track(makeSkyTexture())
   scene.fog = new THREE.Fog(PALETTE.fog, 5, 32)
+  const group = new THREE.Group()
+  scene.add(group)
 
   const rand = seeded(7)
   const boxes: THREE.BufferGeometry[] = []
@@ -146,18 +148,18 @@ export const createBackground = (scene: THREE.Scene) => {
   boxes.forEach((b) => b.dispose())
   const windowTexture = track(makeWindowTexture())
   const cityMaterial = track(noOutline(new THREE.MeshBasicMaterial({ map: windowTexture, vertexColors: true })))
-  scene.add(new THREE.Mesh(city, cityMaterial))
+  group.add(new THREE.Mesh(city, cityMaterial))
 
   const edgeGeometry = track(new THREE.BufferGeometry())
   edgeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(edges, 3))
   const edgeMaterial = track(new THREE.LineBasicMaterial({ color: 0xd9f6ff, transparent: true, opacity: 0.55 }))
-  scene.add(new THREE.LineSegments(edgeGeometry, edgeMaterial))
+  group.add(new THREE.LineSegments(edgeGeometry, edgeMaterial))
 
   const groundGeometry = track(new THREE.PlaneGeometry(200, 200))
   const groundMaterial = track(noOutline(new THREE.MeshBasicMaterial({ color: 0x3b2bc4 })))
   const ground = new THREE.Mesh(groundGeometry, groundMaterial)
   ground.rotation.x = -Math.PI / 2
-  scene.add(ground)
+  group.add(ground)
 
   /* big white diagonal slashes behind the character, unaffected by fog */
   const slashTexture = track(makeSlashTexture())
@@ -168,12 +170,12 @@ export const createBackground = (scene: THREE.Scene) => {
   slash.position.set(0.95, 1.05, -2.2)
   slash.rotation.z = 1.05
   slash.scale.set(4.5, 0.7, 1)
-  scene.add(slash)
+  group.add(slash)
   const thin = new THREE.Mesh(slashGeometry, thinMaterial)
   thin.position.set(-0.9, 1.5, -2.6)
   thin.rotation.z = 1.05
   thin.scale.set(5, 0.06, 1)
-  scene.add(thin)
+  group.add(thin)
 
   /* slow rising bubbles — the source's background has that underwater drift */
   const BUBBLES = 140
@@ -189,9 +191,10 @@ export const createBackground = (scene: THREE.Scene) => {
     new THREE.PointsMaterial({ color: 0xc8fbff, size: 0.035, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }),
   )
   const bubbles = new THREE.Points(bubbleGeometry, bubbleMaterial)
-  scene.add(bubbles)
+  group.add(bubbles)
 
   return {
+    group,
     update: (dt: number) => {
       for (let i = 0; i < BUBBLES; i++) {
         let y = bubblePositions[i * 3 + 1] + bubbleSpeed[i] * dt

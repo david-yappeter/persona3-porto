@@ -1,10 +1,10 @@
 import * as THREE from 'three'
 import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js'
 import { createBackground } from './background'
-import { CARD_H, createCardMesh, createLanyard, drawCardFace, faceKey, type CardFace } from './card'
+import { CARD_H, CARD_W, createCardMesh, createLanyard, drawCardFace, faceKey, type CardFace } from './card'
 import { loadCharacter, type BoneNameOverrides, type CharacterRig } from './character'
-import { solveTwoBoneIK } from './ik'
-import { PALETTE, createToonGradient } from './toon'
+import { solveTwoBoneIK, swingBone } from './ik'
+import { PALETTE, createGrade, createToonGradient } from './toon'
 
 export type CardState = 'held' | 'dangling'
 
@@ -17,20 +17,60 @@ export type SceneOptions = {
 const v3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
 
 /* framing: chest-up, cropped around the mouth like the source */
-const CAMERA_POS = v3(-0.1, 1.16, 1.8)
-const CAMERA_TARGET = v3(-0.1, 1.08, 0)
-const PARALLAX = { x: 0.07, y: 0.035 }
+const CAMERA_POS = v3(-0.13, 1.245, 1.25)
+const CAMERA_TARGET = v3(-0.13, 1.225, 0)
+/* dutch tilt, radians — the source frame leans with the head to the right */
+const CAMERA_ROLL = 0.2
+const PARALLAX = { x: 0.04, y: 0.02 }
 
 /* wrist targets in character space (metres, facing +Z, left hand on +X);
    pole = which way the elbow points */
-const HELD_POSE = { hand: v3(0.04, 1.19, 0.25), pole: v3(0.7, -0.7, -0.3) }
+const HELD_POSE = { hand: v3(0.05, 1.25, 0.22), pole: v3(0.4, -1, 0.3) }
 const DANGLE_POSE = { hand: v3(0.12, 1.33, 0.27), pole: v3(0.45, -1, -0.1) }
 const OTHER_ARM = { hand: v3(-0.27, 0.87, 0.06), pole: v3(-0.2, 0, -1) }
 const POSE_DURATION = 0.6
+/* slight turn toward screen-left, bringing the card arm forward */
+const BODY_TURN = -0.2
 
-/* wrist-to-fingertip / wrist-to-grip distances along the forearm direction */
+/* hand orientation per pose, in character space: f = where the fingers
+   point, n = out of the palm. Held = a pinch: palm toward camera, fingers
+   behind the card, thumb across its front; dangling = open palm too. */
+const HELD_HAND = { f: v3(-1.2, 1, 0.1), n: v3(-0.15, 0.1, 1) }
+const DANGLE_HAND = { f: v3(0.08, 1, 0.05), n: v3(-0.1, 0, 1) }
+/* fingers curl gently behind the card, thumb pressed across its front */
+const HELD_CURL = { fingers: [0.05, 0.1, 0.2] as const, thumb: 0.1 }
+/* anime close-up exaggeration: the card hand reads bigger than life */
+const CARD_HAND_SCALE = 1.25
+const DANGLE_CURL = { fingers: [0.08, 0.08, 0.08] as const, thumb: 0.05 }
+/* grip layout, from the middle finger: its last joint lands on the card's
+   left edge at `edgeV` (fraction of card height from centre), and the card
+   sits `depth` behind the fingers along the palm normal */
+const GRIP = { edgeV: -0.2 }
+/* finger thickness (at the scaled-up hand) plus half the card's thickness:
+   the card is kept at least this far behind every finger joint over it */
+const FINGER_CLEARANCE = 0.012
+/* where the thumb tip presses on the card's face: measured in from its
+   lower-left corner, lifted off the surface by the thumb's thickness */
+const THUMB_PRESS = { u: 0.014, v: 0.012, lift: 0.011 }
+/* card placement for rigs without finger bones */
+const HELD_CARD = { offset: v3(-0.065, 0.1, 0), alongN: 0.022 }
+const HELD_UP = v3(0, 1, 0)
+
+/* flat offset copy of the character behind it, like the source's grey
+   silhouette — done by re-rendering the character from a shifted camera */
+const SILHOUETTE = { color: 0xc9cbdf, shiftX: 0.075, shiftY: 0.035 }
+
+const basisQuat = (f: THREE.Vector3, n: THREE.Vector3) => {
+  const F = f.clone().normalize()
+  const N = n.clone().addScaledVector(F, -n.dot(F)).normalize()
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(F, N, new THREE.Vector3().crossVectors(F, N)))
+}
+/* rotation taking the hand's rest (f, n) onto a target (f, n) */
+const handRotation = (restF: THREE.Vector3, restN: THREE.Vector3, target: { f: THREE.Vector3; n: THREE.Vector3 }) =>
+  basisQuat(target.f, target.n).multiply(basisQuat(restF, restN).invert())
+
+/* wrist-to-fingertip distance, where the lanyard loops over the hand */
 const FINGERTIP = 0.15
-const GRIP = 0.07
 
 const STRING_LEN = 0.17
 const GRAVITY = v3(0, -6.5, 0)
@@ -42,38 +82,12 @@ const BODY_FRONT_Z = 0.19
 const RELEASE_BLEND = 0.35
 const GRAB_DURATION = 0.4
 const SPIN_DURATION = 0.6
+/* to flip, a gripped card slides up out of the pinch (clear of both the
+   thumb in front and the fingertips behind), turns, and slides back */
+const SPIN_SLIDE = 0.1
 /* how long the card stays gripped once the character is on screen, before
    the drop onto the lanyard */
 const HOLD_AFTER_READY = 0.8
-
-/* P3-style over-ear headphones resting around the neck */
-const createHeadphones = (gradientMap: THREE.Texture) => {
-  const dark = new THREE.MeshToonMaterial({ color: 0x23263a, gradientMap })
-  const accent = new THREE.MeshToonMaterial({ color: 0xd8dce8, gradientMap })
-  const R = 0.098
-  const group = new THREE.Group()
-  const tilt = new THREE.Group()
-  /* back of the band rides higher than the cups on the collarbones */
-  tilt.rotation.x = 0.45
-  group.add(tilt)
-  const band = new THREE.Mesh(new THREE.TorusGeometry(R, 0.008, 8, 32, Math.PI), dark)
-  band.rotation.x = -Math.PI / 2
-  tilt.add(band)
-  for (const side of [1, -1]) {
-    const cup = new THREE.Group()
-    cup.position.set(side * (R + 0.006), 0, 0.012)
-    cup.rotation.set(0, side * 0.55, side * 0.25)
-    const shell = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.026, 28), dark)
-    shell.rotation.z = Math.PI / 2
-    cup.add(shell)
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.005, 8, 28), accent)
-    ring.rotation.y = Math.PI / 2
-    ring.position.x = side * 0.014
-    cup.add(ring)
-    tilt.add(cup)
-  }
-  return group
-}
 
 const smooth = (t: number) => t * t * (3 - 2 * t)
 const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
@@ -87,12 +101,18 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   renderer.setSize(width, height)
   mount.appendChild(renderer.domElement)
   const effect = new OutlineEffect(renderer, { defaultThickness: 0.0045, defaultColor: PALETTE.outline })
+  /* frames are composed from several passes, cleared once by hand */
+  renderer.autoClear = false
+  effect.autoClear = false
+  const grade = createGrade()
+  grade.setHeight(renderer.domElement.height)
   const anisotropy = renderer.capabilities.getMaxAnisotropy()
 
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(28, width / height, 0.05, 80)
   camera.position.copy(CAMERA_POS)
   camera.lookAt(CAMERA_TARGET)
+  camera.rotateZ(CAMERA_ROLL)
 
   const background = createBackground(scene)
 
@@ -106,18 +126,19 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
 
   const gradient = createToonGradient()
   const stage = new THREE.Group()
+  stage.rotation.y = BODY_TURN
   scene.add(stage)
+  const stageQ = new THREE.Quaternion().setFromEuler(stage.rotation)
   let rig: CharacterRig | null = null
-  const headphones = createHeadphones(gradient)
-  headphones.visible = false
-  stage.add(headphones)
+  const heldR = new THREE.Quaternion()
+  const dangleR = new THREE.Quaternion()
 
   /* card stays hidden until the model resolves (or fails), so it never
      floats alone and the hold-then-drop happens with the character there */
   let ready = false
   let readyAt = 0
   let disposed = false
-  void loadCharacter(options.modelSrc, gradient, options.boneNames).then((loaded) => {
+  void loadCharacter(options.modelSrc, gradient, grade, options.boneNames).then((loaded) => {
     if (disposed) {
       loaded?.dispose()
       return
@@ -125,7 +146,11 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     if (loaded) {
       rig = loaded
       stage.add(rig.root)
-      headphones.visible = !!rig.neck
+      rig.cardArm.hand.scale.setScalar(CARD_HAND_SCALE)
+      if (rig.cardHand) {
+        heldR.copy(handRotation(rig.cardHand.restF, rig.cardHand.restN, HELD_HAND))
+        dangleR.copy(handRotation(rig.cardHand.restF, rig.cardHand.restN, DANGLE_HAND))
+      }
     }
     ready = true
     readyAt = elapsed
@@ -231,7 +256,29 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   const fingerDir = new THREE.Vector3()
   const anchor = new THREE.Vector3()
   const heldTop = new THREE.Vector3()
-  const heldUp = v3(-0.16, 1, 0).normalize()
+  const heldUp = new THREE.Vector3()
+  const handF = new THREE.Vector3()
+  const heldTie = new THREE.Vector3()
+  const knuckle = new THREE.Vector3()
+  const fingerTip = new THREE.Vector3()
+  const gripU = new THREE.Vector3()
+  const gripV = new THREE.Vector3()
+  const gripW = new THREE.Vector3()
+  const heldBaseQ = new THREE.Quaternion()
+  const cardCenter = new THREE.Vector3()
+  const thumbBase = new THREE.Vector3()
+  const thumbTip = new THREE.Vector3()
+  const thumbTarget = new THREE.Vector3()
+  const thumbFrom = new THREE.Vector3()
+  const thumbTo = new THREE.Vector3()
+  const jointPos = new THREE.Vector3()
+  const rel = new THREE.Vector3()
+  const handN = new THREE.Vector3()
+  const handR = new THREE.Quaternion()
+  const handWorldQ = new THREE.Quaternion()
+  const parentQ = new THREE.Quaternion()
+  const silhouetteCam = new THREE.PerspectiveCamera()
+  const silhouetteMaterial = new THREE.MeshBasicMaterial({ color: SILHOUETTE.color, fog: false })
   const cardPos = new THREE.Vector3()
   const upTarget = new THREE.Vector3()
   const tmp = new THREE.Vector3()
@@ -294,6 +341,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
       CAMERA_POS.z,
     )
     camera.lookAt(CAMERA_TARGET)
+    camera.rotateZ(CAMERA_ROLL)
     background.update(dt)
 
     /* breathing */
@@ -313,31 +361,124 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     handTarget.x += Math.sin(elapsed * 0.9) * 0.006 * armE
     handTarget.y += Math.sin(elapsed * 1.3) * 0.005
     stage.localToWorld(handTarget)
+    heldUp.copy(HELD_UP).applyQuaternion(stageQ)
     if (rig) {
-      pole.lerpVectors(HELD_POSE.pole, DANGLE_POSE.pole, armE)
+      pole.lerpVectors(HELD_POSE.pole, DANGLE_POSE.pole, armE).applyQuaternion(stageQ)
       const arm = rig.cardArm
       solveTwoBoneIK(arm.upper, arm.lower, arm.hand, handTarget, pole)
       const other = rig.otherArm
-      solveTwoBoneIK(other.upper, other.lower, other.hand, stage.localToWorld(elbow.copy(OTHER_ARM.hand)), OTHER_ARM.pole)
+      solveTwoBoneIK(
+        other.upper,
+        other.lower,
+        other.hand,
+        stage.localToWorld(elbow.copy(OTHER_ARM.hand)),
+        tmp.copy(OTHER_ARM.pole).applyQuaternion(stageQ),
+      )
       arm.hand.getWorldPosition(wrist)
       arm.lower.getWorldPosition(elbow)
       fingerDir.subVectors(wrist, elbow).normalize()
-      rig.postUpdate(dt)
-      if (rig.neck) {
-        rig.neck.getWorldPosition(headphones.position)
-        stage.worldToLocal(headphones.position).add(tmp.set(0, 0.03, 0.015))
+      const hand = rig.cardHand
+      if (hand) {
+        handR.slerpQuaternions(heldR, dangleR, armE)
+        handWorldQ.copy(stageQ).multiply(handR).multiply(hand.restQuat)
+        if (arm.hand.parent) arm.hand.parent.getWorldQuaternion(parentQ).invert()
+        else parentQ.identity()
+        arm.hand.quaternion.copy(parentQ.multiply(handWorldQ))
+        arm.hand.updateMatrixWorld(true)
+        const curlAt = (k: 0 | 1 | 2) => THREE.MathUtils.lerp(HELD_CURL.fingers[k], DANGLE_CURL.fingers[k], armE)
+        hand.curl(
+          [curlAt(0), curlAt(1), curlAt(2)],
+          THREE.MathUtils.lerp(HELD_CURL.thumb, DANGLE_CURL.thumb, armE),
+        )
+        arm.hand.updateMatrixWorld(true)
+        handF.copy(hand.restF).applyQuaternion(handR).applyQuaternion(stageQ)
+        handN.copy(hand.restN).applyQuaternion(handR).applyQuaternion(stageQ)
+        fingerDir.copy(handF)
+      } else {
+        handF.copy(fingerDir)
+        handN.set(0, 0, -1).applyQuaternion(stageQ)
       }
+      rig.postUpdate(dt)
     } else {
       /* no model: the card hangs from where the hand would be */
       wrist.copy(handTarget)
       fingerDir.set(0, 1, 0)
+      handF.set(0, 1, 0)
+      handN.set(0, 0, -1)
     }
     anchor.copy(wrist).addScaledVector(fingerDir, FINGERTIP)
-    heldTop
-      .copy(wrist)
-      .addScaledVector(fingerDir, GRIP)
-      .add(tmp.set(0, 0, 0.03))
-      .addScaledVector(heldUp, CARD_H * 0.78)
+    const gripHand = rig?.cardHand
+    let gripped = false
+    if (gripHand?.knuckle && gripHand.fingerTip) {
+      /* card plane parallel to the palm, upright within that plane */
+      gripHand.knuckle.getWorldPosition(knuckle)
+      gripHand.fingerTip.getWorldPosition(fingerTip)
+      const reach = knuckle.distanceTo(fingerTip)
+      /* card face toward the camera, whichever way the palm points */
+      gripW.copy(handN)
+      if (gripW.dot(tmp.subVectors(camera.position, knuckle)) < 0) gripW.negate()
+      gripV.copy(heldUp).addScaledVector(handN, -heldUp.dot(handN)).normalize()
+      gripU.crossVectors(gripV, gripW).normalize()
+      const fu = handF.dot(gripU)
+      const fv = handF.dot(gripV)
+      const fl = Math.hypot(fu, fv) || 1
+      /* knuckle position in card coordinates, so the finger's last joint
+         lands on the left edge */
+      const ku = -CARD_W / 2 - (fu / fl) * reach
+      const kv = CARD_H * GRIP.edgeV - (fv / fl) * reach
+      /* card centre before choosing its depth behind the fingers */
+      cardCenter.copy(knuckle).addScaledVector(gripU, -ku).addScaledVector(gripV, -kv)
+      /* the hand is arched, so the knuckles and tips sit at different
+         depths — push the card back past the deepest finger point that's
+         actually over its face (tips are extrapolated past the last joint) */
+      let deepest = -Infinity
+      const consider = (point: THREE.Vector3) => {
+        rel.subVectors(point, cardCenter)
+        if (Math.abs(rel.dot(gripU)) > CARD_W / 2 || Math.abs(rel.dot(gripV)) > CARD_H / 2) return
+        deepest = Math.max(deepest, rel.dot(handN))
+      }
+      for (const joint of gripHand.joints) {
+        if (joint.thumb) continue
+        joint.bone.getWorldPosition(jointPos)
+        consider(jointPos)
+        if (joint.joint === 2 && joint.bone.parent) {
+          joint.bone.parent.getWorldPosition(tmp)
+          consider(jointPos.addScaledVector(tmp.subVectors(jointPos, tmp), 0.8))
+        }
+      }
+      heldTop
+        .copy(cardCenter)
+        .addScaledVector(gripV, CARD_H / 2)
+        .addScaledVector(handN, (Number.isFinite(deepest) ? deepest : 0) + FINGER_CLEARANCE)
+      basis.makeBasis(gripU, gripV, gripW)
+      heldBaseQ.setFromRotationMatrix(basis)
+      gripped = true
+
+      /* swing the thumb so its tip lands on the card's front face — a curl
+         angle alone leaves it poking out toward the camera */
+      const thumbs = gripHand.joints.filter((j) => j.thumb)
+      const lastThumb = thumbs[thumbs.length - 1]?.bone
+      if (thumbs.length >= 2 && lastThumb?.parent) {
+        thumbs[0].bone.getWorldPosition(thumbBase)
+        lastThumb.getWorldPosition(thumbTip)
+        lastThumb.parent.getWorldPosition(tmp)
+        thumbTip.addScaledVector(tmp.subVectors(thumbTip, tmp), 0.8)
+        thumbTarget
+          .copy(heldTop)
+          .addScaledVector(gripV, -CARD_H + THUMB_PRESS.v)
+          .addScaledVector(gripU, -CARD_W / 2 + THUMB_PRESS.u)
+          .addScaledVector(gripW, THUMB_PRESS.lift)
+        thumbFrom.subVectors(thumbTip, thumbBase).normalize()
+        thumbTo.subVectors(thumbTarget, thumbBase).normalize().lerp(thumbFrom, armE).normalize()
+        swingBone(thumbs[0].bone, thumbFrom, thumbTo)
+      }
+    } else {
+      heldTop
+        .copy(wrist)
+        .add(center.copy(HELD_CARD.offset).applyQuaternion(stageQ))
+        .addScaledVector(handN, HELD_CARD.alongN)
+        .addScaledVector(heldUp, CARD_H / 2)
+    }
 
     if (!initialized) {
       initialized = true
@@ -363,8 +504,10 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
 
     /* spin progress */
     let spinYaw = 0
+    let spinSlide = 0
     if (spinStart >= 0) {
       const s = (elapsed - spinStart) / SPIN_DURATION
+      spinSlide = Math.sin(Math.PI * Math.min(s, 1)) * SPIN_SLIDE
       if (s >= 1) {
         spinStart = -1
         if (queued) {
@@ -391,10 +534,12 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
 
     const idleYaw = Math.sin(elapsed * 0.8) * 0.28 + Math.sin(elapsed * 1.7) * 0.08
     faceCamera(dangleQ, p, smoothUp, idleYaw + spinYaw)
-    faceCamera(heldQ, heldTop, heldUp, Math.sin(elapsed * 0.6) * 0.08 + spinYaw)
+    if (gripped) heldQ.setFromAxisAngle(gripV, spinYaw).multiply(heldBaseQ)
+    else faceCamera(heldQ, heldTop, heldUp, Math.sin(elapsed * 0.6) * 0.08 + spinYaw)
 
     if (pinned) {
       cardPos.copy(heldTop)
+      if (gripped) cardPos.addScaledVector(gripV, spinSlide)
       card.mesh.quaternion.copy(heldQ)
     } else if (grabbing) {
       const g = smooth(grabT)
@@ -405,17 +550,57 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
       card.mesh.quaternion.slerpQuaternions(dangleQ, heldQ, releaseBlend * releaseBlend)
     }
     card.mesh.position.copy(cardPos)
+    card.mesh.updateMatrixWorld()
+    /* while gripped, the lanyard leaves from the card's left edge */
+    card.mesh.localToWorld(heldTie.set(-CARD_W / 2, -CARD_H * 0.45, 0))
 
-    /* lanyard: card tie point > fingertips (sagging when slack) > tail down */
-    const slack = Math.max(0, STRING_LEN - cardPos.distanceTo(anchor))
-    control.addVectors(cardPos, anchor).multiplyScalar(0.5).add(tmp.set(0, -slack * 0.9, 0.01))
-    for (let i = 0; i < CARD_POINTS; i++) bezier(cardPos, control, anchor, i / (CARD_POINTS - 1), lanyardPoints[i])
-    const tailEnd = tmp.copy(anchor).add(center.set(-0.1, -0.55, -0.06))
-    control.copy(anchor).add(forward.set(0.03, -0.2, 0.02))
-    for (let i = 1; i < TAIL_POINTS; i++) bezier(anchor, control, tailEnd, i / (TAIL_POINTS - 1), lanyardPoints[CARD_POINTS - 1 + i])
+    /* lanyard: card tie point > fingertips (sagging when slack) > tail down.
+       While gripped it just hangs from the wrist instead of crossing the
+       card's face. */
+    const tieFrom = pinned ? heldTie : cardPos
+    const tieTo = pinned ? heldTie : anchor
+    const slack = Math.max(0, STRING_LEN - tieFrom.distanceTo(tieTo))
+    control.addVectors(tieFrom, tieTo).multiplyScalar(0.5).add(tmp.set(0, -slack * 0.9, 0.01))
+    for (let i = 0; i < CARD_POINTS; i++) bezier(tieFrom, control, tieTo, i / (CARD_POINTS - 1), lanyardPoints[i])
+    const tailEnd = tmp.copy(tieTo).add(center.set(-0.2, -0.5, -0.02).applyQuaternion(stageQ))
+    control.copy(tieTo).add(forward.set(0.03, -0.2, 0.02))
+    for (let i = 1; i < TAIL_POINTS; i++) bezier(tieTo, control, tailEnd, i / (TAIL_POINTS - 1), lanyardPoints[CARD_POINTS - 1 + i])
     lanyard.setPoints(lanyardPoints)
 
+    renderFrame()
+  }
+
+  /* 1) background  2) flat silhouette of the character from a shifted
+     camera  3) depth cleared, character + card with outlines on top */
+  const renderFrame = () => {
+    const sky = scene.background
+    const cardVisible = card.mesh.visible
+    renderer.clear()
+
+    stage.visible = false
+    card.mesh.visible = false
+    lanyard.line.visible = false
+    renderer.render(scene, camera)
+
+    scene.background = null
+    background.group.visible = false
+    stage.visible = true
+    if (rig) {
+      silhouetteCam.copy(camera)
+      silhouetteCam.translateX(-SILHOUETTE.shiftX)
+      silhouetteCam.translateY(-SILHOUETTE.shiftY)
+      scene.overrideMaterial = silhouetteMaterial
+      renderer.render(scene, silhouetteCam)
+      scene.overrideMaterial = null
+    }
+
+    renderer.clearDepth()
+    card.mesh.visible = cardVisible
+    lanyard.line.visible = cardVisible
     effect.render(scene, camera)
+
+    background.group.visible = true
+    scene.background = sky
   }
   renderer.setAnimationLoop(tick)
 
@@ -427,6 +612,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     camera.updateProjectionMatrix()
     renderer.setSize(w, h)
     lanyard.material.resolution.set(w, h)
+    grade.setHeight(renderer.domElement.height)
   })
   resize.observe(mount)
 
@@ -439,13 +625,8 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
       resize.disconnect()
       window.removeEventListener('pointermove', onPointer)
       rig?.dispose()
-      headphones.traverse((o) => {
-        const mesh = o as THREE.Mesh
-        if (!mesh.isMesh) return
-        mesh.geometry.dispose()
-        ;(mesh.material as THREE.Material).dispose()
-      })
       gradient.dispose()
+      silhouetteMaterial.dispose()
       card.dispose()
       spinPending?.dispose()
       queued?.dispose()

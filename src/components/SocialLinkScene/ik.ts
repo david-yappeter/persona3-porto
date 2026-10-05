@@ -12,7 +12,9 @@ const _delta = new THREE.Quaternion()
 const _world = new THREE.Quaternion()
 const _parent = new THREE.Quaternion()
 
-const swingBone = (bone: THREE.Object3D, from: THREE.Vector3, to: THREE.Vector3) => {
+/** rotates `bone` (in world space) by the minimal turn taking direction
+    `from` onto `to`; both must be unit vectors */
+export const swingBone = (bone: THREE.Object3D, from: THREE.Vector3, to: THREE.Vector3) => {
   _delta.setFromUnitVectors(from, to)
   bone.getWorldQuaternion(_world).premultiply(_delta)
   if (bone.parent) bone.parent.getWorldQuaternion(_parent).invert()

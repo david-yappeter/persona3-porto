@@ -15,8 +15,8 @@ export type CardFace = {
   numeral?: string
 }
 
-export const CARD_W = 0.13
-export const CARD_H = 0.204
+export const CARD_W = 0.09
+export const CARD_H = 0.14
 const CARD_D = 0.003
 const TEX_W = 768
 const TEX_H = Math.round((TEX_W * CARD_H) / CARD_W)
