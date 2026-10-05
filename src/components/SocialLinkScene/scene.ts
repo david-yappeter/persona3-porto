@@ -17,27 +17,29 @@ export type SceneOptions = {
   backdrop: boolean
   hiddenMaterials?: RegExp
   originalMaterials?: boolean
+  /** P3 menu duotone remap on the character; defaults to on with the backdrop */
+  menuColors?: boolean
 }
 
 const v3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
 
 /* framing: chest-up, cropped around the mouth like the source */
-const CAMERA_POS = v3(-0.13, 1.14, 1.25)
-const CAMERA_TARGET = v3(-0.13, 1.12, 0)
+const CAMERA_POS = v3(0.05, 1.58, 0.86)
+const CAMERA_TARGET = v3(0.05, 1.34, 0)
 /* dutch tilt, radians — the source frame leans with the head to the right */
 const CAMERA_ROLL = 0.2
-const PARALLAX = { x: 0.04, y: 0.02 }
+const PARALLAX = { x: 0.03, y: 0.02 }
 
 /* wrist targets in character space (metres, facing +Z, left hand on +X);
    pole = which way the elbow points */
 /* held: elbow bent to `elbowAngle` and tucked against the side (pole down
    and slightly back), the hand reaching from the shoulder along `dir` — the
    reach length comes from the real bone lengths, so the angle is exact */
-const HELD_POSE = { dir: v3(-0.12, -0.15, 0.21), elbowAngle: THREE.MathUtils.degToRad(80), pole: v3(0.2, -1, -0.3) }
+const HELD_POSE = { dir: v3(-0.12, -0.15, 0.21), elbowAngle: THREE.MathUtils.degToRad(55), pole: v3(1, -1, -0.3) }
 /* where the held card floats when no model loaded */
 const HELD_FALLBACK = v3(0.05, 1.15, 0.2)
 const DANGLE_POSE = { hand: v3(0.12, 1.33, 0.27), pole: v3(0.45, -1, -0.1) }
-const OTHER_ARM = { hand: v3(-0.24, 0.78, 0.02), pole: v3(-0.3, 0, -1) }
+const OTHER_ARM = { hand: v3(-0.19, 0.78, 0.05), pole: v3(1, 0, -1) }
 const POSE_DURATION = 0.6
 /* slight turn toward screen-left, bringing the card arm forward */
 const BODY_TURN = -0.2
@@ -53,7 +55,7 @@ const HELD_CURL = { fingers: [0.06, 0.12, 0.4] as const, thumb: 0.1 }
    ring and little fingers fold in a bit more, like a relaxed real grip */
 const HELD_FINGER_EXTRA = [0.1, 0.1, 0.15, 0.25] as const
 /* >1 exaggerates the card hand for an anime close-up; 1 = as modelled */
-const CARD_HAND_SCALE = 1
+const CARD_HAND_SCALE = 1.1
 const DANGLE_CURL = { fingers: [0.08, 0.08, 0.08] as const, thumb: 0.05 }
 /* grip layout, from the middle finger: its last joint lands on the card's
    left edge at `edgeV` (fraction of card height from centre), and the card
@@ -119,7 +121,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   /* frames are composed from several passes, cleared once by hand */
   renderer.autoClear = false
   effect.autoClear = false
-  const grade = createGrade(options.backdrop)
+  const grade = createGrade(options.menuColors ?? options.backdrop)
   grade.setHeight(renderer.domElement.height)
   const anisotropy = renderer.capabilities.getMaxAnisotropy()
 

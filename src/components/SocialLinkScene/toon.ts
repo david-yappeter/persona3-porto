@@ -55,7 +55,9 @@ export const toonify = (source: THREE.Material, gradientMap: THREE.Texture) => {
 const GRADE_GLSL = /* glsl */ `
   {
     float p3l = dot(gl_FragColor.rgb, vec3(0.299, 0.587, 0.114));
-    p3l = clamp(pow(p3l, 0.75) * 1.12 + 0.04, 0.0, 1.0);
+    /* contrast curve: dark cloth sinks into indigo, skin/shirt blow out to
+       white-cyan like the menu art */
+    p3l = clamp((pow(p3l, 0.85) - 0.08) * 1.35, 0.0, 1.0);
     vec3 p3g;
     if (p3l < 0.25) p3g = mix(vec3(0.16, 0.06, 0.52), vec3(0.17, 0.32, 0.93), p3l / 0.25);
     else if (p3l < 0.5) p3g = mix(vec3(0.17, 0.32, 0.93), vec3(0.08, 0.78, 0.97), (p3l - 0.25) / 0.25);

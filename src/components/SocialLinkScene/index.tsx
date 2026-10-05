@@ -21,6 +21,9 @@ type SocialLinkSceneProps = {
   hiddenMaterials?: RegExp
   /** keep a non-VRM model's own materials instead of toon-converting them */
   originalMaterials?: boolean
+  /** recolour the character into the P3 menu duotone (violet > blue > cyan >
+      white by brightness); defaults to on with the backdrop */
+  menuColors?: boolean
 }
 
 const DEFAULT_MODEL = `${import.meta.env.BASE_URL}assets/models/protagonist.glb`
@@ -37,6 +40,7 @@ export const SocialLinkScene = ({
   backdrop = true,
   hiddenMaterials,
   originalMaterials = false,
+  menuColors,
 }: SocialLinkSceneProps) => {
   const mountRef = useRef<HTMLDivElement>(null)
   const controllerRef = useRef<SocialLinkSceneController | null>(null)
@@ -56,6 +60,7 @@ export const SocialLinkScene = ({
       backdrop,
       hiddenMaterials,
       originalMaterials,
+      menuColors,
     })
     controller.setCard(latest.current.card)
     controllerRef.current = controller
@@ -64,7 +69,7 @@ export const SocialLinkScene = ({
       controllerRef.current = null
     }
     /* keyed by content — boneNames is usually an inline object literal */
-  }, [modelSrc, JSON.stringify(boneNames ?? {}), backdrop, hiddenMaterials?.source, originalMaterials])
+  }, [modelSrc, JSON.stringify(boneNames ?? {}), backdrop, hiddenMaterials?.source, originalMaterials, menuColors])
 
   const { image, imageFit, title, subtitle, numeral } = card
   useEffect(() => {

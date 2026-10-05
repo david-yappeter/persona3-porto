@@ -82,6 +82,7 @@ export const SkillDetail = () => {
         backdrop={false}
         hiddenMaterials={MAKOTO_HIDDEN}
         originalMaterials
+        menuColors
       />
       <div className="skill-detail">
         <div className="skill-detail-header">
