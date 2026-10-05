@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { VRMLoaderPlugin, VRMUtils, type VRM } from '@pixiv/three-vrm'
 import { noOutline, toonify, type Grade } from './toon'
 import { addLongCoat } from './coat'
+import { buildWind } from './wind'
 
 export type ArmChain = { upper: THREE.Object3D; lower: THREE.Object3D; hand: THREE.Object3D }
 
@@ -23,6 +24,9 @@ export type HandRig = {
       one value spread over the thumb, plus an optional extra per finger
       (index, middle, ring, little) added at every joint */
   curl: (fingers: readonly [number, number, number], thumb: number, extra?: readonly [number, number, number, number]) => void
+  /** rotates the hand from its current pose about its own axes, in radians:
+      bend toward the palm, side toward the thumb, twist around the fingers */
+  wrist: (bend: number, side: number, twist: number) => void
 }
 
 export type CharacterRig = {
@@ -33,6 +37,7 @@ export type CharacterRig = {
   otherArm: ArmChain
   /** null when the rig's finger bones can't be identified */
   cardHand: HandRig | null
+  otherHand: HandRig | null
   /** before IK: reset arms to rest / advance animation */
   update: (dt: number) => void
   /** after IK: hair/cloth physics, blinking */
@@ -145,7 +150,9 @@ const buildHandRig = (bone: BoneResolver, hand: THREE.Object3D, lower: THREE.Obj
   const elbowDir = wrist.clone().sub(lower.getWorldPosition(new THREE.Vector3())).normalize()
   const f = pos(named('MiddleProximal'), wrist.clone().add(elbowDir)).sub(wrist).normalize()
   const across = pos(named('IndexProximal'), wrist).sub(pos(named('LittleProximal'), wrist))
-  const n = new THREE.Vector3().crossVectors(f, across).normalize()
+  /* index-minus-little mirrors between hands, so the right hand's cross
+     product comes out of the back of the hand — flip it back to the palm */
+  const n = new THREE.Vector3().crossVectors(f, across).normalize().multiplyScalar(side === 'right' ? -1 : 1)
   /* curling a finger = rotating it from f toward the palm normal */
   const fingerAxis = new THREE.Vector3().crossVectors(f, n).normalize()
 
@@ -169,8 +176,17 @@ const buildHandRig = (bone: BoneResolver, hand: THREE.Object3D, lower: THREE.Obj
   }
 
   const q = new THREE.Quaternion()
+  /* f, palm-normal and curl axes in the hand bone's local space, for wrist() */
+  const restQuat = hand.getWorldQuaternion(new THREE.Quaternion())
+  const toLocal = restQuat.clone().invert()
+  const localF = f.clone().applyQuaternion(toLocal)
+  const localN = n.clone().applyQuaternion(toLocal)
+  const localCurl = fingerAxis.clone().applyQuaternion(toLocal)
+  /* + turn about the palm normal swings the fingers toward the thumb on
+     the left hand, away from it on the mirrored right */
+  const thumbSign = side === 'right' ? -1 : 1
   return {
-    restQuat: hand.getWorldQuaternion(new THREE.Quaternion()),
+    restQuat,
     restF: f,
     restN: n,
     joints,
@@ -181,6 +197,12 @@ const buildHandRig = (bone: BoneResolver, hand: THREE.Object3D, lower: THREE.Obj
         q.setFromAxisAngle(j.axis, j.thumb ? thumb * THUMB_WEIGHT[j.joint] : fingers[j.joint] + (extra?.[j.finger] ?? 0))
         j.bone.quaternion.copy(j.rest).multiply(q)
       }
+    },
+    wrist: (bend, sideTilt, twist) => {
+      hand.quaternion
+        .multiply(q.setFromAxisAngle(localF, twist))
+        .multiply(q.setFromAxisAngle(localCurl, bend))
+        .multiply(q.setFromAxisAngle(localN, sideTilt * thumbSign))
     },
   }
 }
@@ -360,21 +382,29 @@ export const loadCharacter = async (url: string, options: LoadOptions): Promise<
       return null
     }
     const cardHand = buildHandRig(resolveHandBone, lh, ll, 'left')
+    const otherHand = buildHandRig(resolveHandBone, rh, rl, 'right')
     const cardArm = { upper: lu, lower: ll, hand: lh }
     const otherArm = { upper: ru, lower: rl, hand: rh }
     const followTwists = buildTwistFollowers([cardArm, otherArm])
+    /* VRMs sway via their own spring bones */
+    const wind = vrm ? null : buildWind(model)
 
     return {
       root,
       cardArm,
       otherArm,
       cardHand,
+      otherHand,
       update: (dt) => {
-        if (mixer) mixer.update(dt)
-        else resetArms()
+        /* always from rest first: wrist() turns the hand relative to its
+           current pose, which must not carry over between frames on bones
+           an animation clip doesn't key */
+        resetArms()
+        mixer?.update(dt)
       },
       postUpdate: (dt) => {
         followTwists()
+        wind?.(dt)
         if (!vrm) return
         blink?.(dt)
         vrm.update(dt)

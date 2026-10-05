@@ -43,6 +43,21 @@ export const SkillDetail = () => {
     if (!validInitial) void navigate('/skill', { replace: true })
   }, [validInitial, navigate])
 
+  /* dev-only pose lab: /skill/0?lab adds a slider panel that edits the
+     character's pose live (stripped from production builds) */
+  useEffect(() => {
+    if (!import.meta.env.DEV || !new URLSearchParams(window.location.search).has('lab')) return
+    let dispose: (() => void) | undefined
+    let cancelled = false
+    void import('../../components/SocialLinkScene/poseLab').then((m) => {
+      if (!cancelled) dispose = m.mountPoseLab()
+    })
+    return () => {
+      cancelled = true
+      dispose?.()
+    }
+  }, [])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return

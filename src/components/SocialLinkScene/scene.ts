@@ -2,8 +2,9 @@ import * as THREE from 'three'
 import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js'
 import { createBackground } from './background'
 import { CARD_H, CARD_W, createCardMesh, createLanyard, drawCardFace, faceKey, type CardFace } from './card'
-import { loadCharacter, type BoneNameOverrides, type CharacterRig } from './character'
+import { loadCharacter, type ArmChain, type BoneNameOverrides, type CharacterRig } from './character'
 import { solveTwoBoneIK, swingBone } from './ik'
+import { LAB, POSE } from './pose'
 import { PALETTE, createGrade, createToonGradient } from './toon'
 
 export type CardState = 'held' | 'dangling'
@@ -23,51 +24,16 @@ export type SceneOptions = {
 
 const v3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
 
-/* framing: chest-up, cropped around the mouth like the source */
-const CAMERA_POS = v3(0.05, 1.58, 0.86)
-const CAMERA_TARGET = v3(0.05, 1.34, 0)
-/* dutch tilt, radians — the source frame leans with the head to the right */
-const CAMERA_ROLL = 0.2
-const PARALLAX = { x: 0.03, y: 0.02 }
+/* framing, held pose, hands and grip are all in POSE (pose.ts) */
+const deg = THREE.MathUtils.degToRad
 
-/* wrist targets in character space (metres, facing +Z, left hand on +X);
-   pole = which way the elbow points */
-/* held: elbow bent to `elbowAngle` and tucked against the side (pole down
-   and slightly back), the hand reaching from the shoulder along `dir` — the
-   reach length comes from the real bone lengths, so the angle is exact */
-const HELD_POSE = { dir: v3(-0.12, -0.15, 0.21), elbowAngle: THREE.MathUtils.degToRad(55), pole: v3(1, -1, -0.3) }
 /* where the held card floats when no model loaded */
 const HELD_FALLBACK = v3(0.05, 1.15, 0.2)
 const DANGLE_POSE = { hand: v3(0.12, 1.33, 0.27), pole: v3(0.45, -1, -0.1) }
-const OTHER_ARM = { hand: v3(-0.19, 0.78, 0.05), pole: v3(1, 0, -1) }
 const POSE_DURATION = 0.6
-/* slight turn toward screen-left, bringing the card arm forward */
-const BODY_TURN = -0.2
-
-/* hand orientation per pose, in character space: f = where the fingers
-   point, n = out of the palm. Held = back of the hand to camera, fingers
-   across the card's face, thumb behind it; dangling = open palm to camera. */
-const HELD_HAND = { f: v3(-1.2, 1, 0.1), n: v3(0.1, 0.2, -1) }
+/* open palm to camera while dangling (f = fingers, n = out of the palm) */
 const DANGLE_HAND = { f: v3(0.08, 1, 0.05), n: v3(-0.1, 0, 1) }
-/* fingers lie across the card's face, tips easing around its left edge */
-const HELD_CURL = { fingers: [0.06, 0.12, 0.4] as const, thumb: 0.1 }
-/* extra curl per finger (index, middle, ring, little) while holding: the
-   ring and little fingers fold in a bit more, like a relaxed real grip */
-const HELD_FINGER_EXTRA = [0.1, 0.1, 0.15, 0.25] as const
-/* >1 exaggerates the card hand for an anime close-up; 1 = as modelled */
-const CARD_HAND_SCALE = 1.1
 const DANGLE_CURL = { fingers: [0.08, 0.08, 0.08] as const, thumb: 0.05 }
-/* grip layout, from the middle finger: its last joint lands on the card's
-   left edge at `edgeV` (fraction of card height from centre), and the card
-   sits `depth` behind the fingers along the palm normal */
-const GRIP = { edgeV: -0.02 }
-/* finger thickness (at the scaled-up hand) plus half the card's thickness:
-   the card is kept at least this far behind every finger joint over it */
-const FINGER_CLEARANCE = 0.012
-/* where the thumb tip presses, in card coordinates from its centre (u right,
-   v up); negative lift = behind the card. u just past the right edge so the
-   tip peeks out around it */
-const THUMB_PRESS = { u: 0.033, v: 0.0, lift: -0.04 }
 /* card placement for rigs without finger bones */
 const HELD_CARD = { offset: v3(-0.065, 0.1, 0), alongN: 0.022 }
 const HELD_UP = v3(0, 1, 0)
@@ -126,10 +92,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   const anisotropy = renderer.capabilities.getMaxAnisotropy()
 
   const scene = new THREE.Scene()
-  const camera = new THREE.PerspectiveCamera(28, width / height, 0.05, 80)
-  camera.position.copy(CAMERA_POS)
-  camera.lookAt(CAMERA_TARGET)
-  camera.rotateZ(CAMERA_ROLL)
+  const camera = new THREE.PerspectiveCamera(POSE.camera.fov, width / height, 0.05, 80)
 
   const background = options.backdrop ? createBackground(scene) : null
 
@@ -143,9 +106,8 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
 
   const gradient = createToonGradient()
   const stage = new THREE.Group()
-  stage.rotation.y = BODY_TURN
   scene.add(stage)
-  const stageQ = new THREE.Quaternion().setFromEuler(stage.rotation)
+  const stageQ = new THREE.Quaternion()
   let rig: CharacterRig | null = null
   const heldR = new THREE.Quaternion()
   const dangleR = new THREE.Quaternion()
@@ -169,11 +131,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     if (loaded) {
       rig = loaded
       stage.add(rig.root)
-      rig.cardArm.hand.scale.setScalar(CARD_HAND_SCALE)
-      if (rig.cardHand) {
-        heldR.copy(handRotation(rig.cardHand.restF, rig.cardHand.restN, HELD_HAND))
-        dangleR.copy(handRotation(rig.cardHand.restF, rig.cardHand.restN, DANGLE_HAND))
-      }
+      if (rig.cardHand) dangleR.copy(handRotation(rig.cardHand.restF, rig.cardHand.restN, DANGLE_HAND))
     }
     ready = true
     readyAt = elapsed
@@ -266,6 +224,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   /* --- pointer parallax --- */
   const pointer = new THREE.Vector2()
   const pointerSmooth = new THREE.Vector2()
+  const tmp2 = new THREE.Vector2()
   const onPointer = (e: PointerEvent) => {
     pointer.set((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1)
   }
@@ -286,6 +245,17 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   const heldTie = new THREE.Vector3()
   const knuckle = new THREE.Vector3()
   const fingerTip = new THREE.Vector3()
+  const reachElbow = new THREE.Vector3()
+  const reachWrist = new THREE.Vector3()
+
+  /* shoulder-to-wrist distance that closes the elbow to `angle` (law of
+     cosines on the real bone lengths); leaves the shoulder in `shoulder` */
+  const elbowReach = (arm: ArmChain, angle: number) => {
+    arm.upper.getWorldPosition(shoulder)
+    const upperLen = shoulder.distanceTo(arm.lower.getWorldPosition(reachElbow))
+    const foreLen = reachElbow.distanceTo(arm.hand.getWorldPosition(reachWrist))
+    return Math.sqrt(upperLen ** 2 + foreLen ** 2 - 2 * upperLen * foreLen * Math.cos(angle))
+  }
   const gripU = new THREE.Vector3()
   const gripV = new THREE.Vector3()
   const gripW = new THREE.Vector3()
@@ -359,18 +329,29 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     last = now
     elapsed += dt
 
-    pointerSmooth.lerp(pointer, 1 - Math.exp(-4 * dt))
+    const cam = POSE.camera
+    pointerSmooth.lerp(LAB.noParallax ? tmp2.set(0, 0) : pointer, 1 - Math.exp(-4 * dt))
     camera.position.set(
-      CAMERA_POS.x + pointerSmooth.x * PARALLAX.x + Math.sin(elapsed * 0.25) * 0.01,
-      CAMERA_POS.y - pointerSmooth.y * PARALLAX.y,
-      CAMERA_POS.z,
+      cam.pos.x + pointerSmooth.x * cam.parallaxX + Math.sin(elapsed * 0.25) * 0.01,
+      cam.pos.y - pointerSmooth.y * cam.parallaxY,
+      cam.pos.z,
     )
-    camera.lookAt(CAMERA_TARGET)
-    camera.rotateZ(CAMERA_ROLL)
+    camera.lookAt(cam.target)
+    camera.rotateZ(deg(cam.roll))
+    if (camera.fov !== cam.fov) {
+      camera.fov = cam.fov
+      camera.updateProjectionMatrix()
+    }
     background?.update(dt)
 
     /* breathing */
     stage.position.y = Math.sin(elapsed * 1.7) * 0.003
+    stage.rotation.y = deg(POSE.body.turn)
+    stageQ.setFromEuler(stage.rotation)
+    if (rig) {
+      rig.cardArm.hand.scale.setScalar(POSE.body.cardHandScale)
+      if (rig.cardHand) heldR.copy(handRotation(rig.cardHand.restF, rig.cardHand.restN, POSE.cardHand))
+    }
     rig?.update(dt)
     stage.updateMatrixWorld(true)
 
@@ -383,15 +364,11 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
 
     armT = THREE.MathUtils.clamp(armT + (effective === 'dangling' ? dt : -dt) / POSE_DURATION, 0, 1)
     const armE = smooth(armT)
-    /* held reach: from the shoulder along HELD_POSE.dir, exactly as far as
-       closes the elbow to HELD_POSE.elbowAngle (law of cosines) */
+    /* held reach: from the shoulder along cardArm.dir, exactly as far as
+       closes the elbow to cardArm.elbowAngle (law of cosines) */
     if (rig) {
-      const a = rig.cardArm
-      a.upper.getWorldPosition(shoulder)
-      const upperLen = shoulder.distanceTo(a.lower.getWorldPosition(tmp))
-      const foreLen = tmp.distanceTo(a.hand.getWorldPosition(heldWrist))
-      const reach = Math.sqrt(upperLen ** 2 + foreLen ** 2 - 2 * upperLen * foreLen * Math.cos(HELD_POSE.elbowAngle))
-      heldWrist.copy(HELD_POSE.dir).normalize().applyQuaternion(stageQ).multiplyScalar(reach).add(shoulder)
+      const reach = elbowReach(rig.cardArm, deg(POSE.cardArm.elbowAngle))
+      heldWrist.copy(POSE.cardArm.dir).normalize().applyQuaternion(stageQ).multiplyScalar(reach).add(shoulder)
     } else {
       stage.localToWorld(heldWrist.copy(HELD_FALLBACK))
     }
@@ -400,17 +377,20 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     handTarget.y += Math.sin(elapsed * 1.3) * 0.005
     heldUp.copy(HELD_UP).applyQuaternion(stageQ)
     if (rig) {
-      pole.lerpVectors(HELD_POSE.pole, DANGLE_POSE.pole, armE).applyQuaternion(stageQ)
+      pole.lerpVectors(POSE.cardArm.pole, DANGLE_POSE.pole, armE).applyQuaternion(stageQ)
       const arm = rig.cardArm
       solveTwoBoneIK(arm.upper, arm.lower, arm.hand, handTarget, pole)
       const other = rig.otherArm
-      solveTwoBoneIK(
-        other.upper,
-        other.lower,
-        other.hand,
-        stage.localToWorld(elbow.copy(OTHER_ARM.hand)),
-        tmp.copy(OTHER_ARM.pole).applyQuaternion(stageQ),
-      )
+      const otherReach = elbowReach(other, deg(POSE.otherArm.elbowAngle))
+      stage.localToWorld(elbow.copy(POSE.otherArm.hand))
+      elbow.sub(shoulder).setLength(otherReach).add(shoulder)
+      solveTwoBoneIK(other.upper, other.lower, other.hand, elbow, tmp.copy(POSE.otherArm.pole).applyQuaternion(stageQ))
+      if (rig.otherHand) {
+        const oh = POSE.otherHand
+        const of = POSE.otherFingers
+        rig.otherHand.wrist(deg(oh.bend), deg(oh.side), deg(oh.twist))
+        rig.otherHand.curl(of.curl, of.thumb, of.extra)
+      }
       arm.hand.getWorldPosition(wrist)
       arm.lower.getWorldPosition(elbow)
       fingerDir.subVectors(wrist, elbow).normalize()
@@ -422,11 +402,12 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
         else parentQ.identity()
         arm.hand.quaternion.copy(parentQ.multiply(handWorldQ))
         arm.hand.updateMatrixWorld(true)
-        const curlAt = (k: 0 | 1 | 2) => THREE.MathUtils.lerp(HELD_CURL.fingers[k], DANGLE_CURL.fingers[k], armE)
+        const f = POSE.fingers
+        const curlAt = (k: 0 | 1 | 2) => THREE.MathUtils.lerp(f.curl[k], DANGLE_CURL.fingers[k], armE)
         hand.curl(
           [curlAt(0), curlAt(1), curlAt(2)],
-          THREE.MathUtils.lerp(HELD_CURL.thumb, DANGLE_CURL.thumb, armE),
-          [0, 0, HELD_FINGER_EXTRA[2] * (1 - armE), HELD_FINGER_EXTRA[3] * (1 - armE)],
+          THREE.MathUtils.lerp(f.thumb, DANGLE_CURL.thumb, armE),
+          [f.extra[0] * (1 - armE), f.extra[1] * (1 - armE), f.extra[2] * (1 - armE), f.extra[3] * (1 - armE)],
         )
         arm.hand.updateMatrixWorld(true)
         handF.copy(hand.restF).applyQuaternion(handR).applyQuaternion(stageQ)
@@ -463,7 +444,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
       /* knuckle position in card coordinates, so the finger's last joint
          lands on the left edge */
       const ku = -CARD_W / 2 - (fu / fl) * reach
-      const kv = CARD_H * GRIP.edgeV - (fv / fl) * reach
+      const kv = CARD_H * POSE.grip.edgeV - (fv / fl) * reach
       /* card centre before choosing its depth behind the fingers */
       cardCenter.copy(knuckle).addScaledVector(gripU, -ku).addScaledVector(gripV, -kv)
       /* the hand is arched, so the knuckles and tips sit at different
@@ -487,7 +468,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
       heldTop
         .copy(cardCenter)
         .addScaledVector(gripV, CARD_H / 2)
-        .addScaledVector(handN, (Number.isFinite(deepest) ? deepest : 0) + FINGER_CLEARANCE)
+        .addScaledVector(handN, (Number.isFinite(deepest) ? deepest : 0) + POSE.grip.clearance)
       basis.makeBasis(gripU, gripV, gripW)
       heldBaseQ.setFromRotationMatrix(basis)
       gripped = true
@@ -503,9 +484,9 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
         thumbTip.addScaledVector(tmp.subVectors(thumbTip, tmp), 0.8)
         thumbTarget
           .copy(heldTop)
-          .addScaledVector(gripV, -CARD_H / 2 + THUMB_PRESS.v)
-          .addScaledVector(gripU, THUMB_PRESS.u)
-          .addScaledVector(gripW, THUMB_PRESS.lift)
+          .addScaledVector(gripV, -CARD_H / 2 + POSE.thumb.v)
+          .addScaledVector(gripU, POSE.thumb.u)
+          .addScaledVector(gripW, POSE.thumb.lift)
         thumbFrom.subVectors(thumbTip, thumbBase).normalize()
         thumbTo.subVectors(thumbTarget, thumbBase).normalize().lerp(thumbFrom, armE).normalize()
         swingBone(thumbs[0].bone, thumbFrom, thumbTo)
