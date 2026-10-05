@@ -1,13 +1,25 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { MenuBackground } from '../../components/MenuBackground'
-import { ThreeCard } from '../../components/ThreeCard'
+import { SocialLinkScene, type CardFace, type CardState } from '../../components/SocialLinkScene'
 import { EXPERIENCE } from '../../data/experience'
 import { useFitText } from '../../hooks/FitText'
+import { playSfx } from '../../utils/sfx'
 import './SkillDetail.css'
 
-const SOUND_SWITCH = `${import.meta.env.BASE_URL}sound/deck_ui_volume.wav`
+const ROMAN: [number, string][] = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]
+/* arcana numbering starts at 0 (The Fool) */
+const toNumeral = (n: number) => {
+  if (n === 0) return '0'
+  let out = ''
+  for (const [value, glyph] of ROMAN) {
+    while (n >= value) {
+      out += glyph
+      n -= value
+    }
+  }
+  return out
+}
 
 /* text content is all placeholder for now — layout/style only, see the
    feature request. Cycling (Left/Right) is real, just doesn't change what's
@@ -25,13 +37,6 @@ export const SkillDetail = () => {
     if (!validInitial) void navigate('/skill', { replace: true })
   }, [validInitial, navigate])
 
-  const switchSoundRef = useRef<HTMLAudioElement | null>(null)
-  useEffect(() => {
-    const sound = new Audio(SOUND_SWITCH)
-    sound.preload = 'auto'
-    switchSoundRef.current = sound
-  }, [])
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
@@ -39,25 +44,40 @@ export const SkillDetail = () => {
       if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
       e.preventDefault()
       setI((current) => (current + (e.key === 'ArrowRight' ? 1 : -1) + EXPERIENCE.length) % EXPERIENCE.length)
-      /* rewind first so held/rapid presses retrigger instead of being ignored */
-      const sound = switchSoundRef.current
-      if (sound) {
-        sound.currentTime = 0
-        void sound.play().catch(() => {})
-      }
+      playSfx('switchEntry')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  /* card starts gripped at the chest, then drops onto its lanyard — the
+     list-to-detail moment from the source. Delayed past the route
+     transition's reveal so the drop is actually on screen. */
+  const [cardState, setCardState] = useState<CardState>('held')
+  useEffect(() => {
+    const id = window.setTimeout(() => setCardState('dangling'), 900)
+    return () => window.clearTimeout(id)
+  }, [])
+
   const exp = EXPERIENCE[validInitial ? i : 0]
   const positionRef = useFitText(exp.title)
+  const cardIndex = validInitial ? i : 0
+  const card = useMemo<CardFace>(
+    () => ({
+      image: exp.logoSrc,
+      imageFit: 'contain',
+      title: exp.title,
+      subtitle: exp.company,
+      numeral: toNumeral(cardIndex),
+    }),
+    [exp, cardIndex],
+  )
 
   if (!validInitial) return null
 
   return (
     <>
-      <MenuBackground flip decoText="" />
+      <SocialLinkScene card={card} cardState={cardState} />
       <div className="skill-detail">
         <div className="skill-detail-header">
           <span className="skill-detail-nav">
@@ -92,11 +112,6 @@ export const SkillDetail = () => {
           </div>
         </div>
 
-        {/* floating card, center of the screen like the source UI — re-keyed
-            per entry so the flip-in replays fresh each time Left/Right cycles */}
-        <div className="skill-detail-card-stage">
-          <ThreeCard key={i} title={exp.title} subtitle={exp.company} />
-        </div>
 
         <div className="skill-detail-body">
           <ul className="skill-detail-description" key={i}>

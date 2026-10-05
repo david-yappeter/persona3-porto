@@ -1,0 +1,13 @@
+.social-link-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* decorative — the page UI above takes all input */
+  pointer-events: none;
+}
+
+.social-link-scene canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

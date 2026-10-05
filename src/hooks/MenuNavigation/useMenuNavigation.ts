@@ -1,38 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
-
-const SOUND_DOWN = `${import.meta.env.BASE_URL}sound/deck_ui_slider_down.wav`
-const SOUND_UP = `${import.meta.env.BASE_URL}sound/deck_ui_slider_up.wav`
+import { playSfx } from '../../utils/sfx'
 
 /** Arrow-key selection over a list of `count` entries, with the P3 click sounds. */
 export const useMenuNavigation = (count: number) => {
   const [selected, setSelected] = useState(0)
-  const soundsRef = useRef<{ down: HTMLAudioElement; up: HTMLAudioElement } | null>(null)
-
-  useEffect(() => {
-    const moveDown = new Audio(SOUND_DOWN)
-    const moveUp = new Audio(SOUND_UP)
-    moveDown.preload = 'auto'
-    moveUp.preload = 'auto'
-    soundsRef.current = { down: moveDown, up: moveUp }
-  }, [])
-
-  /* rewind first so held/rapid presses retrigger instead of being ignored */
-  const play = (clip: HTMLAudioElement) => {
-    clip.currentTime = 0
-    void clip.play().catch(() => {})
-  }
+  /* mirrors `selected` so moveTo can pick its sound outside the state
+     updater — StrictMode runs updaters twice, which would double the click */
+  const selectedRef = useRef(selected)
+  selectedRef.current = selected
 
   /** move the cursor straight to `index` — used for mouse hover, which jumps
       to an arbitrary row rather than stepping one at a time, so it gets the
       same up/down click feedback keyboard movement gets, picked by whether
       the target is below or above the current row */
   const moveTo = (index: number) => {
-    setSelected((current) => {
-      if (index === current) return current
-      const sounds = soundsRef.current
-      if (sounds) play(index > current ? sounds.down : sounds.up)
-      return index
-    })
+    const current = selectedRef.current
+    if (index === current) return
+    selectedRef.current = index
+    setSelected(index)
+    playSfx(index > current ? 'slideDown' : 'slideUp')
   }
 
   useEffect(() => {
@@ -42,15 +28,14 @@ export const useMenuNavigation = (count: number) => {
       const active = document.activeElement
       if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
 
-      const sounds = soundsRef.current
       if (e.key === 'ArrowDown') {
         e.preventDefault()
         setSelected((i) => (i + 1) % count)
-        if (sounds) play(sounds.down)
+        playSfx('slideDown')
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
         setSelected((i) => (i - 1 + count) % count)
-        if (sounds) play(sounds.up)
+        playSfx('slideUp')
       }
     }
     window.addEventListener('keydown', onKey)

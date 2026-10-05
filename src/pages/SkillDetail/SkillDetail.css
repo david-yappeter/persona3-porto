@@ -195,20 +195,6 @@
   color: #5a5a5a;
 }
 
-/* the floating 3D card — centered over the page like the source UI, behind
-   the description/portrait/name in z-order but visually on top since the
-   WebGL canvas paints over whatever's beneath it at each pixel it touches.
-   pointer-events:none (see ThreeCard.css) so it never intercepts input. */
-.skill-detail-card-stage {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(30vw, 380px);
-  height: min(55vh, 560px);
-  z-index: 2;
-}
-
 /* --- body: description + portrait slot + name/role --- */
 .skill-detail-body {
   position: relative;

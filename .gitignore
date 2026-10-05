@@ -49,3 +49,6 @@ tsconfig.tsbuildinfo
 david-yappeter.pdf
 
 dist/
+
+# local screen recordings
+/Screencast from *
