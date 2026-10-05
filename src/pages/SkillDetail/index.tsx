@@ -1,114 +1,50 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { MenuBackground } from '../../components/MenuBackground'
-import { SocialLinkScene, type CardFace } from '../../components/SocialLinkScene'
 import { EXPERIENCE } from '../../data/experience'
 import { useFitText } from '../../hooks/FitText'
 import { playSfx } from '../../utils/sfx'
+import { useSkillContext } from '../SkillLayout'
 import './SkillDetail.css'
 
-const MAKOTO_MODEL = `${import.meta.env.BASE_URL}assets/models/makoto/scene.gltf`
-/* props and helper geometry bundled with the Sketchfab rip: katana, gun
-   holster, evoker, and tiny marker quads parked on the knee/elbow joints */
-const MAKOTO_HIDDEN = /^(175_|katana|c0744_gunholder|c0744_syoukanki)/
-
-const ROMAN: [number, string][] = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]
-/* arcana numbering starts at 0 (The Fool) */
-const toNumeral = (n: number) => {
-  if (n === 0) return '0'
-  let out = ''
-  for (const [value, glyph] of ROMAN) {
-    while (n >= value) {
-      out += glyph
-      n -= value
-    }
-  }
-  return out
-}
-
 /* text content is all placeholder for now — layout/style only, see the
-   feature request. Cycling (Left/Right) is real, just doesn't change what's
-   shown yet. The URL param only seeds which entry to open on — cycling
-   afterwards is local state, not a route change, so it doesn't re-trigger
-   RouteTransition/re-mount the page on every press. */
+   feature request. The URL param only seeds which entry to open on —
+   cycling (Left/Right) afterwards moves SkillLayout's `active` entry, not
+   the route, so it doesn't remount anything; the 3D card flips to match.
+   The background and 3D scene belong to SkillLayout. */
 export const SkillDetail = () => {
   const navigate = useNavigate()
   const { index } = useParams<{ index: string }>()
   const initial = Number(index)
   const validInitial = Number.isInteger(initial) && initial >= 0 && initial < EXPERIENCE.length
-  const [i, setI] = useState(() => (validInitial ? initial : 0))
+  const { active, setActive } = useSkillContext()
 
   useEffect(() => {
     if (!validInitial) void navigate('/skill', { replace: true })
-  }, [validInitial, navigate])
-
-  /* dev-only pose lab: /skill/0?lab adds a slider panel that edits the
-     character's pose live (stripped from production builds) */
-  useEffect(() => {
-    if (!import.meta.env.DEV || !new URLSearchParams(window.location.search).has('lab')) return
-    let dispose: (() => void) | undefined
-    let cancelled = false
-    void import('../../components/SocialLinkScene/poseLab').then((m) => {
-      if (!cancelled) dispose = m.mountPoseLab()
-    })
-    return () => {
-      cancelled = true
-      dispose?.()
-    }
-  }, [])
-
-  /* Enter toggles the card between held in the hand and floating in front
-     of the chest (palm open) — the "Click / Enter" confirm key */
-  const [floating, setFloating] = useState(false)
+    else setActive(initial)
+  }, [validInitial, initial, navigate, setActive])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const active = document.activeElement
-      if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
-      if (e.key === 'Enter') {
-        if (e.repeat) return
-        e.preventDefault()
-        setFloating((current) => !current)
-        return
-      }
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      const focused = document.activeElement
+      if (focused instanceof HTMLInputElement || focused instanceof HTMLTextAreaElement) return
       e.preventDefault()
-      setI((current) => (current + (e.key === 'ArrowRight' ? 1 : -1) + EXPERIENCE.length) % EXPERIENCE.length)
+      setActive((active + (e.key === 'ArrowRight' ? 1 : -1) + EXPERIENCE.length) % EXPERIENCE.length)
       playSfx('switchEntry')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [active, setActive])
 
-  const exp = EXPERIENCE[validInitial ? i : 0]
+  const i = active
+  const exp = EXPERIENCE[i]
   const positionRef = useFitText(exp.title)
-  const cardIndex = validInitial ? i : 0
-  const card = useMemo<CardFace>(
-    () => ({
-      image: exp.logoSrc,
-      imageFit: 'contain',
-      title: exp.title,
-      subtitle: exp.company,
-      numeral: toNumeral(cardIndex),
-    }),
-    [exp, cardIndex],
-  )
 
   if (!validInitial) return null
 
   return (
     <>
-      <MenuBackground flip decoText="" />
-      <SocialLinkScene
-        card={card}
-        cardState={floating ? 'floating' : 'held'}
-        modelSrc={MAKOTO_MODEL}
-        backdrop={false}
-        hiddenMaterials={MAKOTO_HIDDEN}
-        originalMaterials
-        menuColors
-      />
       <div className="skill-detail">
         <div className="skill-detail-header">
           <span className="skill-detail-nav">
@@ -166,16 +102,6 @@ export const SkillDetail = () => {
             <span className="skill-detail-person-role">Placeholder role description goes here.</span>
           </div>
         </div>
-
-        {/* CC BY 4.0 requires crediting the model's author */}
-        <a
-          className="skill-detail-credit"
-          href="https://sketchfab.com/3d-models/makoto-yuki-persona-5-royal-dlc-batlle-bundle-3db577331f5442c79ec7cd0ac181adf2"
-          target="_blank"
-          rel="noreferrer"
-        >
-          3D model: "Makoto Yuki (Persona 5 Royal, DLC Batlle Bundle)" by 雨宮レン · CC BY 4.0
-        </a>
       </div>
     </>
   )

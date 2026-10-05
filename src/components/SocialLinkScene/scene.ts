@@ -152,7 +152,8 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   /* --- card state: targetState is what was asked for, effective is what's
      playing (held until the character is ready) --- */
   let targetState: CardState = options.initialCardState
-  let effective: CardState = targetState
+  /* floating starts from held (it's an overlay on it, faded in via floatT) */
+  let effective: CardState = targetState === 'dangling' ? 'dangling' : 'held'
   const gateRelease = targetState === 'held'
   let armT = effective === 'held' ? 0 : 1
   let pinned = effective === 'held'

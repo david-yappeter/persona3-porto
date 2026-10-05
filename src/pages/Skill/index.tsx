@@ -1,14 +1,21 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router'
-import { MenuBackground } from '../../components/MenuBackground'
 import { SkillRow } from '../../components/SkillRow'
 import { EXPERIENCE } from '../../data/experience'
 import { useMenuNavigation } from '../../hooks/MenuNavigation'
+import { useSkillContext } from '../SkillLayout'
 
-/* placeholder page, just to exercise the page transition */
+/* placeholder list page. The background and the 3D character (card held
+   in the hand here) belong to SkillLayout; the card shows the row under
+   the cursor, and the cursor starts on whichever entry was last open. */
 export const Skill = () => {
   const navigate = useNavigate()
-  const { selected } = useMenuNavigation(EXPERIENCE.length)
+  const { active, setActive } = useSkillContext()
+  const { selected } = useMenuNavigation(EXPERIENCE.length, active)
+
+  useEffect(() => {
+    setActive(selected)
+  }, [selected, setActive])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -25,7 +32,6 @@ export const Skill = () => {
 
   return (
     <>
-      <MenuBackground flip />
       {/* position+z-index needed so this stacks above MenuBackground's
           un-z-indexed absolute layers, which would otherwise paint over it */}
       <div style={{ position: 'relative', zIndex: 1, height: '100%', padding: '2rem', paddingTop: '7rem' }}>

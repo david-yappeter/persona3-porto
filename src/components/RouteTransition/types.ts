@@ -9,6 +9,10 @@ export enum RouteTransitionKind {
       only flashes a heavy blue overlay over the outgoing page, the second
       chases behind it revealing the incoming page. */
   DoubleRipple = 'double-ripple',
+  /** No effect: the new route swaps in place. For pages under a shared
+      persistent layout (e.g. /skill <-> /skill/:index, where the 3D scene
+      itself animates the change) — a snapshot effect would freeze it. */
+  None = 'none',
 }
 
 export type ExitingRoute = {
@@ -37,9 +41,10 @@ export type RouteTransitionEffectProps = {
 }
 
 /** Overrides the transition kind for one specific navigation direction —
-    "/a" -> "/b" can play something different than "/b" -> "/a". */
+    "/a" -> "/b" can play something different than "/b" -> "/a". A string
+    matches the exact path, a RegExp any path it tests true on. */
 export type RouteTransitionRule = {
-  from: string
-  to: string
+  from: string | RegExp
+  to: string | RegExp
   kind: RouteTransitionKind
 }

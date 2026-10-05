@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { playSfx } from '../../utils/sfx'
 
-/** Arrow-key selection over a list of `count` entries, with the P3 click sounds. */
-export const useMenuNavigation = (count: number) => {
-  const [selected, setSelected] = useState(0)
+/** Arrow-key selection over a list of `count` entries, with the P3 click
+    sounds; the cursor starts on `initial` */
+export const useMenuNavigation = (count: number, initial = 0) => {
+  const [selected, setSelected] = useState(initial)
   /* mirrors `selected` so moveTo can pick its sound outside the state
      updater — StrictMode runs updaters twice, which would double the click */
   const selectedRef = useRef(selected)

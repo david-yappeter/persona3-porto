@@ -24,12 +24,14 @@ type RouteTransitionProps = {
 /* add a new transition: a RouteTransitionKind member + an effect component
    matching RouteTransitionEffectProps, registered here. Nothing else needs
    to change. */
-const EFFECTS: Record<RouteTransitionKind, ComponentType<RouteTransitionEffectProps>> = {
+const EFFECTS: Record<Exclude<RouteTransitionKind, RouteTransitionKind.None>, ComponentType<RouteTransitionEffectProps>> = {
   [RouteTransitionKind.CircleReveal]: CircleRevealTransition,
   [RouteTransitionKind.DoubleRipple]: DoubleRippleTransition,
 }
 
-type Exiting = ExitingRoute & { kind: RouteTransitionKind }
+type Exiting = ExitingRoute & { kind: Exclude<RouteTransitionKind, RouteTransitionKind.None> }
+
+const matches = (pattern: string | RegExp, path: string) => (typeof pattern === 'string' ? pattern === path : pattern.test(path))
 
 /*
  * Renders the current route (from useOutlet, in place of <Outlet/>) inside
@@ -53,13 +55,16 @@ export const RouteTransition = ({ defaultKind, rules }: RouteTransitionProps) =>
   const [exiting, setExiting] = useState<Exiting | null>(null)
 
   if (prevKey.current !== location.key) {
-    const kind = rules?.find((r) => r.from === prevPath.current && r.to === location.pathname)?.kind ?? defaultKind
-    /* the outgoing page's video is about to unmount and remount as the
-       ghost copy whichever effect renders — reading its currentTime here,
-       before that happens, so the ghost can seek to match instead of
-       visibly snapping back to frame 0 */
-    const liveVideo = liveRef.current?.querySelector<HTMLVideoElement>('video')
-    setExiting({ key: prevKey.current, node: prevNode.current, videoTime: liveVideo?.currentTime ?? 0, kind })
+    const kind =
+      rules?.find((r) => matches(r.from, prevPath.current) && matches(r.to, location.pathname))?.kind ?? defaultKind
+    if (kind !== RouteTransitionKind.None) {
+      /* the outgoing page's video is about to unmount and remount as the
+         ghost copy whichever effect renders — reading its currentTime here,
+         before that happens, so the ghost can seek to match instead of
+         visibly snapping back to frame 0 */
+      const liveVideo = liveRef.current?.querySelector<HTMLVideoElement>('video')
+      setExiting({ key: prevKey.current, node: prevNode.current, videoTime: liveVideo?.currentTime ?? 0, kind })
+    }
     prevKey.current = location.key
     prevPath.current = location.pathname
   }

@@ -10,12 +10,19 @@ export const router = createBrowserRouter(
       Component: RootLayout,
       children: [
         { index: true, Component: MainMenu },
-        { path: 'skill', Component: Skill },
         {
-          path: 'skill/:index',
-          /* three.js (~500KB) only needed here — code-split so every other
-             route doesn't pay for it upfront */
-          lazy: () => import('./pages/SkillDetail').then((m) => ({ Component: m.SkillDetail })),
+          path: 'skill',
+          /* shared shell holding the background + 3D scene, so they persist
+             between the list and a detail page. three.js (~500KB) is only
+             needed here — code-split so "/" doesn't pay for it upfront */
+          lazy: () => import('./pages/SkillLayout').then((m) => ({ Component: m.SkillLayout })),
+          children: [
+            { index: true, Component: Skill },
+            {
+              path: ':index',
+              lazy: () => import('./pages/SkillDetail').then((m) => ({ Component: m.SkillDetail })),
+            },
+          ],
         },
       ],
     },

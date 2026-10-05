@@ -8,6 +8,9 @@ import { useBackNavigation } from '../../hooks/BackNavigation'
 import { useNavigationSound } from '../../hooks/NavigationSound'
 import './RootLayout.css'
 
+/* /skill and /skill/:index */
+const SKILL_SECTION = /^\/skill(\/|$)/
+
 /*
  * Persistent chrome. Everything here sits outside RouteTransition, so it
  * survives navigation untouched — the wallet and music player keep their
@@ -33,10 +36,15 @@ export const RootLayout = () => {
 
       <main className="route-view">
         {/* rules lets any specific from->to pair play a different kind —
-            anything not listed falls back to defaultKind */}
+            anything not listed falls back to defaultKind. Within /skill the
+            shared SkillLayout stays mounted and its 3D scene animates the
+            change instead (held card <-> floating card). */}
         <RouteTransition
           defaultKind={RouteTransitionKind.CircleReveal}
-          rules={[{ from: '/', to: '/skill', kind: RouteTransitionKind.DoubleRipple }]}
+          rules={[
+            { from: '/', to: '/skill', kind: RouteTransitionKind.DoubleRipple },
+            { from: SKILL_SECTION, to: SKILL_SECTION, kind: RouteTransitionKind.None },
+          ]}
         />
       </main>
 
