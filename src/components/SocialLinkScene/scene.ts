@@ -12,46 +12,60 @@ export type SceneOptions = {
   modelSrc: string
   boneNames?: BoneNameOverrides
   initialCardState: CardState
+  /** false = just the character and card on a transparent canvas: no city
+      backdrop, silhouette or P3 colour remap */
+  backdrop: boolean
+  hiddenMaterials?: RegExp
+  originalMaterials?: boolean
 }
 
 const v3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
 
 /* framing: chest-up, cropped around the mouth like the source */
-const CAMERA_POS = v3(-0.13, 1.245, 1.25)
-const CAMERA_TARGET = v3(-0.13, 1.225, 0)
+const CAMERA_POS = v3(-0.13, 1.14, 1.25)
+const CAMERA_TARGET = v3(-0.13, 1.12, 0)
 /* dutch tilt, radians — the source frame leans with the head to the right */
 const CAMERA_ROLL = 0.2
 const PARALLAX = { x: 0.04, y: 0.02 }
 
 /* wrist targets in character space (metres, facing +Z, left hand on +X);
    pole = which way the elbow points */
-const HELD_POSE = { hand: v3(0.05, 1.25, 0.22), pole: v3(0.4, -1, 0.3) }
+/* held: elbow bent to `elbowAngle` and tucked against the side (pole down
+   and slightly back), the hand reaching from the shoulder along `dir` — the
+   reach length comes from the real bone lengths, so the angle is exact */
+const HELD_POSE = { dir: v3(-0.12, -0.15, 0.21), elbowAngle: THREE.MathUtils.degToRad(80), pole: v3(0.2, -1, -0.3) }
+/* where the held card floats when no model loaded */
+const HELD_FALLBACK = v3(0.05, 1.15, 0.2)
 const DANGLE_POSE = { hand: v3(0.12, 1.33, 0.27), pole: v3(0.45, -1, -0.1) }
-const OTHER_ARM = { hand: v3(-0.27, 0.87, 0.06), pole: v3(-0.2, 0, -1) }
+const OTHER_ARM = { hand: v3(-0.24, 0.78, 0.02), pole: v3(-0.3, 0, -1) }
 const POSE_DURATION = 0.6
 /* slight turn toward screen-left, bringing the card arm forward */
 const BODY_TURN = -0.2
 
 /* hand orientation per pose, in character space: f = where the fingers
-   point, n = out of the palm. Held = a pinch: palm toward camera, fingers
-   behind the card, thumb across its front; dangling = open palm too. */
-const HELD_HAND = { f: v3(-1.2, 1, 0.1), n: v3(-0.15, 0.1, 1) }
+   point, n = out of the palm. Held = back of the hand to camera, fingers
+   across the card's face, thumb behind it; dangling = open palm to camera. */
+const HELD_HAND = { f: v3(-1.2, 1, 0.1), n: v3(0.1, 0.2, -1) }
 const DANGLE_HAND = { f: v3(0.08, 1, 0.05), n: v3(-0.1, 0, 1) }
-/* fingers curl gently behind the card, thumb pressed across its front */
-const HELD_CURL = { fingers: [0.05, 0.1, 0.2] as const, thumb: 0.1 }
-/* anime close-up exaggeration: the card hand reads bigger than life */
-const CARD_HAND_SCALE = 1.25
+/* fingers lie across the card's face, tips easing around its left edge */
+const HELD_CURL = { fingers: [0.06, 0.12, 0.4] as const, thumb: 0.1 }
+/* extra curl per finger (index, middle, ring, little) while holding: the
+   ring and little fingers fold in a bit more, like a relaxed real grip */
+const HELD_FINGER_EXTRA = [0.1, 0.1, 0.15, 0.25] as const
+/* >1 exaggerates the card hand for an anime close-up; 1 = as modelled */
+const CARD_HAND_SCALE = 1
 const DANGLE_CURL = { fingers: [0.08, 0.08, 0.08] as const, thumb: 0.05 }
 /* grip layout, from the middle finger: its last joint lands on the card's
    left edge at `edgeV` (fraction of card height from centre), and the card
    sits `depth` behind the fingers along the palm normal */
-const GRIP = { edgeV: -0.2 }
+const GRIP = { edgeV: -0.02 }
 /* finger thickness (at the scaled-up hand) plus half the card's thickness:
    the card is kept at least this far behind every finger joint over it */
 const FINGER_CLEARANCE = 0.012
-/* where the thumb tip presses on the card's face: measured in from its
-   lower-left corner, lifted off the surface by the thumb's thickness */
-const THUMB_PRESS = { u: 0.014, v: 0.012, lift: 0.011 }
+/* where the thumb tip presses, in card coordinates from its centre (u right,
+   v up); negative lift = behind the card. u just past the right edge so the
+   tip peeks out around it */
+const THUMB_PRESS = { u: 0.033, v: 0.0, lift: -0.04 }
 /* card placement for rigs without finger bones */
 const HELD_CARD = { offset: v3(-0.065, 0.1, 0), alongN: 0.022 }
 const HELD_UP = v3(0, 1, 0)
@@ -96,7 +110,8 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   const width = Math.max(mount.clientWidth, 1)
   const height = Math.max(mount.clientHeight, 1)
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true })
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: !options.backdrop })
+  renderer.setClearColor(0x000000, 0)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.setSize(width, height)
   mount.appendChild(renderer.domElement)
@@ -104,7 +119,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   /* frames are composed from several passes, cleared once by hand */
   renderer.autoClear = false
   effect.autoClear = false
-  const grade = createGrade()
+  const grade = createGrade(options.backdrop)
   grade.setHeight(renderer.domElement.height)
   const anisotropy = renderer.capabilities.getMaxAnisotropy()
 
@@ -114,7 +129,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   camera.lookAt(CAMERA_TARGET)
   camera.rotateZ(CAMERA_ROLL)
 
-  const background = createBackground(scene)
+  const background = options.backdrop ? createBackground(scene) : null
 
   scene.add(new THREE.AmbientLight(PALETTE.shadowLight, 0.9))
   const key = new THREE.DirectionalLight(PALETTE.keyLight, 2)
@@ -138,7 +153,13 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   let ready = false
   let readyAt = 0
   let disposed = false
-  void loadCharacter(options.modelSrc, gradient, grade, options.boneNames).then((loaded) => {
+  void loadCharacter(options.modelSrc, {
+    gradientMap: gradient,
+    grade,
+    boneNames: options.boneNames,
+    hiddenMaterials: options.hiddenMaterials,
+    originalMaterials: options.originalMaterials,
+  }).then((loaded) => {
     if (disposed) {
       loaded?.dispose()
       return
@@ -250,6 +271,8 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
 
   /* scratch */
   const handTarget = new THREE.Vector3()
+  const shoulder = new THREE.Vector3()
+  const heldWrist = new THREE.Vector3()
   const pole = new THREE.Vector3()
   const wrist = new THREE.Vector3()
   const elbow = new THREE.Vector3()
@@ -342,7 +365,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     )
     camera.lookAt(CAMERA_TARGET)
     camera.rotateZ(CAMERA_ROLL)
-    background.update(dt)
+    background?.update(dt)
 
     /* breathing */
     stage.position.y = Math.sin(elapsed * 1.7) * 0.003
@@ -353,14 +376,26 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     const next: CardState = targetState === 'dangling' && releaseAllowed ? 'dangling' : 'held'
     if (next !== effective) applyCardState(next)
     card.mesh.visible = ready
-    lanyard.line.visible = ready
+    /* the lanyard only reads while the card hangs from it */
+    lanyard.line.visible = ready && !pinned
 
     armT = THREE.MathUtils.clamp(armT + (effective === 'dangling' ? dt : -dt) / POSE_DURATION, 0, 1)
     const armE = smooth(armT)
-    handTarget.lerpVectors(HELD_POSE.hand, DANGLE_POSE.hand, armE)
+    /* held reach: from the shoulder along HELD_POSE.dir, exactly as far as
+       closes the elbow to HELD_POSE.elbowAngle (law of cosines) */
+    if (rig) {
+      const a = rig.cardArm
+      a.upper.getWorldPosition(shoulder)
+      const upperLen = shoulder.distanceTo(a.lower.getWorldPosition(tmp))
+      const foreLen = tmp.distanceTo(a.hand.getWorldPosition(heldWrist))
+      const reach = Math.sqrt(upperLen ** 2 + foreLen ** 2 - 2 * upperLen * foreLen * Math.cos(HELD_POSE.elbowAngle))
+      heldWrist.copy(HELD_POSE.dir).normalize().applyQuaternion(stageQ).multiplyScalar(reach).add(shoulder)
+    } else {
+      stage.localToWorld(heldWrist.copy(HELD_FALLBACK))
+    }
+    handTarget.lerpVectors(heldWrist, stage.localToWorld(tmp.copy(DANGLE_POSE.hand)), armE)
     handTarget.x += Math.sin(elapsed * 0.9) * 0.006 * armE
     handTarget.y += Math.sin(elapsed * 1.3) * 0.005
-    stage.localToWorld(handTarget)
     heldUp.copy(HELD_UP).applyQuaternion(stageQ)
     if (rig) {
       pole.lerpVectors(HELD_POSE.pole, DANGLE_POSE.pole, armE).applyQuaternion(stageQ)
@@ -389,6 +424,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
         hand.curl(
           [curlAt(0), curlAt(1), curlAt(2)],
           THREE.MathUtils.lerp(HELD_CURL.thumb, DANGLE_CURL.thumb, armE),
+          [0, 0, HELD_FINGER_EXTRA[2] * (1 - armE), HELD_FINGER_EXTRA[3] * (1 - armE)],
         )
         arm.hand.updateMatrixWorld(true)
         handF.copy(hand.restF).applyQuaternion(handR).applyQuaternion(stageQ)
@@ -454,8 +490,8 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
       heldBaseQ.setFromRotationMatrix(basis)
       gripped = true
 
-      /* swing the thumb so its tip lands on the card's front face — a curl
-         angle alone leaves it poking out toward the camera */
+      /* swing the thumb so its tip presses the card (behind it, opposing the
+         fingers) — a curl angle alone leaves it poking out */
       const thumbs = gripHand.joints.filter((j) => j.thumb)
       const lastThumb = thumbs[thumbs.length - 1]?.bone
       if (thumbs.length >= 2 && lastThumb?.parent) {
@@ -465,8 +501,8 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
         thumbTip.addScaledVector(tmp.subVectors(thumbTip, tmp), 0.8)
         thumbTarget
           .copy(heldTop)
-          .addScaledVector(gripV, -CARD_H + THUMB_PRESS.v)
-          .addScaledVector(gripU, -CARD_W / 2 + THUMB_PRESS.u)
+          .addScaledVector(gripV, -CARD_H / 2 + THUMB_PRESS.v)
+          .addScaledVector(gripU, THUMB_PRESS.u)
           .addScaledVector(gripW, THUMB_PRESS.lift)
         thumbFrom.subVectors(thumbTip, thumbBase).normalize()
         thumbTo.subVectors(thumbTarget, thumbBase).normalize().lerp(thumbFrom, armE).normalize()
@@ -573,9 +609,14 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   /* 1) background  2) flat silhouette of the character from a shifted
      camera  3) depth cleared, character + card with outlines on top */
   const renderFrame = () => {
+    renderer.clear()
+    if (!background) {
+      effect.render(scene, camera)
+      return
+    }
     const sky = scene.background
     const cardVisible = card.mesh.visible
-    renderer.clear()
+    const lanyardVisible = lanyard.line.visible
 
     stage.visible = false
     card.mesh.visible = false
@@ -596,7 +637,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
 
     renderer.clearDepth()
     card.mesh.visible = cardVisible
-    lanyard.line.visible = cardVisible
+    lanyard.line.visible = lanyardVisible
     effect.render(scene, camera)
 
     background.group.visible = true
@@ -631,7 +672,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
       spinPending?.dispose()
       queued?.dispose()
       lanyard.dispose()
-      background.dispose()
+      background?.dispose()
       renderer.dispose()
       renderer.forceContextLoss()
       renderer.domElement.remove()

@@ -11,10 +11,16 @@ type SocialLinkSceneProps = {
   /** 'held' = gripped at the chest, 'dangling' = hanging off the raised hand
       on its lanyard; changing it animates between the two */
   cardState?: CardState
-  /** rigged GLB/VRM; until it exists a procedural stand-in is shown */
+  /** rigged GLB/glTF/VRM; until it loads only the card is shown */
   modelSrc?: string
   /** exact node names, only needed when auto-detection misses the arm bones */
   boneNames?: BoneNameOverrides
+  /** false = character and card only, on a transparent canvas over the page */
+  backdrop?: boolean
+  /** hide meshes whose material name matches (props, helper geometry) */
+  hiddenMaterials?: RegExp
+  /** keep a non-VRM model's own materials instead of toon-converting them */
+  originalMaterials?: boolean
 }
 
 const DEFAULT_MODEL = `${import.meta.env.BASE_URL}assets/models/protagonist.glb`
@@ -23,7 +29,15 @@ const DEFAULT_MODEL = `${import.meta.env.BASE_URL}assets/models/protagonist.glb`
     arcana card on its lanyard, rendered full-bleed behind the page UI. The
     scene mounts once; card/cardState changes are fed to it live so the card
     can spin-swap its face and swing instead of remounting. */
-export const SocialLinkScene = ({ card, cardState = 'dangling', modelSrc = DEFAULT_MODEL, boneNames }: SocialLinkSceneProps) => {
+export const SocialLinkScene = ({
+  card,
+  cardState = 'dangling',
+  modelSrc = DEFAULT_MODEL,
+  boneNames,
+  backdrop = true,
+  hiddenMaterials,
+  originalMaterials = false,
+}: SocialLinkSceneProps) => {
   const mountRef = useRef<HTMLDivElement>(null)
   const controllerRef = useRef<SocialLinkSceneController | null>(null)
   const latest = useRef({ card, cardState })
@@ -39,6 +53,9 @@ export const SocialLinkScene = ({ card, cardState = 'dangling', modelSrc = DEFAU
       modelSrc,
       boneNames,
       initialCardState: latest.current.cardState,
+      backdrop,
+      hiddenMaterials,
+      originalMaterials,
     })
     controller.setCard(latest.current.card)
     controllerRef.current = controller
@@ -47,7 +64,7 @@ export const SocialLinkScene = ({ card, cardState = 'dangling', modelSrc = DEFAU
       controllerRef.current = null
     }
     /* keyed by content — boneNames is usually an inline object literal */
-  }, [modelSrc, JSON.stringify(boneNames ?? {})])
+  }, [modelSrc, JSON.stringify(boneNames ?? {}), backdrop, hiddenMaterials?.source, originalMaterials])
 
   const { image, imageFit, title, subtitle, numeral } = card
   useEffect(() => {

@@ -67,9 +67,11 @@ const GRADE_GLSL = /* glsl */ `
   }
 `
 
-export const createGrade = () => {
+/** `enabled: false` gives a no-op grade, for showing a model in its own colours */
+export const createGrade = (enabled = true) => {
   const resolutionY = { value: 1 }
   const apply = <T extends THREE.Material>(material: T) => {
+    if (!enabled) return material
     /* VRM meshes share material instances — only wrap each one once */
     if (material.userData.p3Graded) return material
     material.userData.p3Graded = true

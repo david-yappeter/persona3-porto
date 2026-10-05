@@ -6,7 +6,7 @@ import { addLongCoat } from './coat'
 
 export type ArmChain = { upper: THREE.Object3D; lower: THREE.Object3D; hand: THREE.Object3D }
 
-type FingerJoint = { bone: THREE.Object3D; rest: THREE.Quaternion; axis: THREE.Vector3; joint: number; thumb: boolean }
+type FingerJoint = { bone: THREE.Object3D; rest: THREE.Quaternion; axis: THREE.Vector3; joint: number; finger: number; thumb: boolean }
 
 /* everything needed to orient the card hand and curl its fingers. Bases are
    in the model's own (unrotated) space: f = toward the fingers, n = out of
@@ -20,8 +20,9 @@ export type HandRig = {
   knuckle: THREE.Object3D | null
   fingerTip: THREE.Object3D | null
   /** curl in radians: per joint (base, middle, tip) for the four fingers,
-      one value spread over the thumb */
-  curl: (fingers: readonly [number, number, number], thumb: number) => void
+      one value spread over the thumb, plus an optional extra per finger
+      (index, middle, ring, little) added at every joint */
+  curl: (fingers: readonly [number, number, number], thumb: number, extra?: readonly [number, number, number, number]) => void
 }
 
 export type CharacterRig = {
@@ -30,7 +31,7 @@ export type CharacterRig = {
      arm that holds / dangles the card */
   cardArm: ArmChain
   otherArm: ArmChain
-  /** null for non-VRM models — no finger bones to drive */
+  /** null when the rig's finger bones can't be identified */
   cardHand: HandRig | null
   /** before IK: reset arms to rest / advance animation */
   update: (dt: number) => void
@@ -40,6 +41,16 @@ export type CharacterRig = {
 }
 
 export type BoneNameOverrides = Partial<Record<'leftUpperArm' | 'leftLowerArm' | 'leftHand' | 'rightUpperArm' | 'rightLowerArm' | 'rightHand', string>>
+
+export type LoadOptions = {
+  gradientMap: THREE.Texture
+  grade: Grade
+  boneNames?: BoneNameOverrides
+  /** meshes with a material whose name matches are hidden (props, helpers) */
+  hiddenMaterials?: RegExp
+  /** non-VRM only: keep the file's own materials instead of toon-converting */
+  originalMaterials?: boolean
+}
 
 /** model is rescaled so it stands this tall, in metres */
 const CHARACTER_HEIGHT = 1.72
@@ -75,7 +86,13 @@ const BONE_CANDIDATES: Record<keyof BoneNameOverrides, string[]> = {
   rightHand: ['righthand', 'jbiprhand', 'handr', 'handright', 'rhand', 'bip01rhand'],
 }
 
-const normalizeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/^mixamorig\d*/, '')
+/* Sketchfab exports append a node index ("Bip01_L_UpperArm_0112") — drop it */
+const normalizeName = (name: string) =>
+  name
+    .replace(/_\d+$/, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .replace(/^mixamorig\d*/, '')
 
 const findBone = (root: THREE.Object3D, key: keyof BoneNameOverrides, overrides: BoneNameOverrides) => {
   const nodes: THREE.Object3D[] = []
@@ -98,38 +115,57 @@ const restPoseKeeper = (bones: THREE.Object3D[]) => {
 
 const FINGERS = ['Index', 'Middle', 'Ring', 'Little'] as const
 const JOINTS = ['Proximal', 'Intermediate', 'Distal'] as const
-const THUMB = ['leftThumbMetacarpal', 'leftThumbProximal', 'leftThumbDistal'] as const
+const THUMB_JOINTS = ['Metacarpal', 'Proximal', 'Distal'] as const
 const THUMB_WEIGHT = [1, 1.1, 0.8]
 
-const buildHandRig = (vrm: VRM, hand: THREE.Object3D, lower: THREE.Object3D): HandRig => {
-  type BoneName = Parameters<typeof vrm.humanoid.getRawBoneNode>[0]
-  const bone = (name: string) => vrm.humanoid.getRawBoneNode(name as BoneName)
+type Side = 'left' | 'right'
+
+/* VRM humanoid finger names -> normalized names in 3ds Max Biped rigs
+   (Finger0 = thumb ... Finger4 = little, segments "", "1", "2") and Mixamo */
+const HAND_ALIASES: Record<string, string[]> = {}
+for (const side of ['left', 'right'] as const) {
+  const s = side[0]
+  FINGERS.forEach((finger, f) =>
+    JOINTS.forEach((joint, j) => {
+      HAND_ALIASES[`${side}${finger}${joint}`] = [`bip01${s}finger${f + 1}${j ? j : ''}`, `${side}hand${finger.toLowerCase().replace('little', 'pinky')}${j + 1}`]
+    }),
+  )
+  THUMB_JOINTS.forEach((joint, j) => {
+    HAND_ALIASES[`${side}Thumb${joint}`] = [`bip01${s}finger0${j ? j : ''}`, `${side}handthumb${j + 1}`]
+  })
+}
+
+type BoneResolver = (vrmName: string) => THREE.Object3D | null
+
+const buildHandRig = (bone: BoneResolver, hand: THREE.Object3D, lower: THREE.Object3D, side: Side): HandRig | null => {
+  const named = (name: string) => bone(`${side}${name}`)
+  if (!named('MiddleProximal') || !named('IndexProximal') || !named('LittleProximal')) return null
   const pos = (o: THREE.Object3D | null, fallback: THREE.Vector3) => (o ? o.getWorldPosition(new THREE.Vector3()) : fallback)
   const wrist = hand.getWorldPosition(new THREE.Vector3())
   const elbowDir = wrist.clone().sub(lower.getWorldPosition(new THREE.Vector3())).normalize()
-  const f = pos(bone('leftMiddleProximal'), wrist.clone().add(elbowDir)).sub(wrist).normalize()
-  const side = pos(bone('leftIndexProximal'), wrist).sub(pos(bone('leftLittleProximal'), wrist))
-  const n = new THREE.Vector3().crossVectors(f, side).normalize()
+  const f = pos(named('MiddleProximal'), wrist.clone().add(elbowDir)).sub(wrist).normalize()
+  const across = pos(named('IndexProximal'), wrist).sub(pos(named('LittleProximal'), wrist))
+  const n = new THREE.Vector3().crossVectors(f, across).normalize()
   /* curling a finger = rotating it from f toward the palm normal */
   const fingerAxis = new THREE.Vector3().crossVectors(f, n).normalize()
 
   const joints: FingerJoint[] = []
   const worldQ = new THREE.Quaternion()
-  const addJoint = (b: THREE.Object3D, axisWorld: THREE.Vector3, joint: number, thumb: boolean) => {
+  const addJoint = (b: THREE.Object3D, axisWorld: THREE.Vector3, joint: number, finger: number, thumb: boolean) => {
     b.getWorldQuaternion(worldQ)
-    joints.push({ bone: b, rest: b.quaternion.clone(), axis: axisWorld.clone().applyQuaternion(worldQ.invert()), joint, thumb })
+    joints.push({ bone: b, rest: b.quaternion.clone(), axis: axisWorld.clone().applyQuaternion(worldQ.invert()), joint, finger, thumb })
   }
-  for (const finger of FINGERS) {
+  FINGERS.forEach((finger, f) => {
     JOINTS.forEach((joint, i) => {
-      const b = bone(`left${finger}${joint}`)
-      if (b) addJoint(b, fingerAxis, i, false)
+      const b = named(`${finger}${joint}`)
+      if (b) addJoint(b, fingerAxis, i, f, false)
     })
-  }
-  const thumbBones = THUMB.map((name) => bone(name)).filter((b): b is THREE.Object3D => !!b)
+  })
+  const thumbBones = THUMB_JOINTS.map((joint) => named(`Thumb${joint}`)).filter((b): b is THREE.Object3D => !!b)
   if (thumbBones.length >= 2) {
     const thumbDir = pos(thumbBones[thumbBones.length - 1], wrist).sub(pos(thumbBones[0], wrist)).normalize()
     const thumbAxis = new THREE.Vector3().crossVectors(thumbDir, n).normalize()
-    thumbBones.forEach((b, i) => addJoint(b, thumbAxis, i, true))
+    thumbBones.forEach((b, i) => addJoint(b, thumbAxis, i, -1, true))
   }
 
   const q = new THREE.Quaternion()
@@ -138,14 +174,41 @@ const buildHandRig = (vrm: VRM, hand: THREE.Object3D, lower: THREE.Object3D): Ha
     restF: f,
     restN: n,
     joints,
-    knuckle: bone('leftMiddleProximal'),
-    fingerTip: bone('leftMiddleDistal'),
-    curl: (fingers, thumb) => {
+    knuckle: named('MiddleProximal'),
+    fingerTip: named('MiddleDistal'),
+    curl: (fingers, thumb, extra) => {
       for (const j of joints) {
-        q.setFromAxisAngle(j.axis, j.thumb ? thumb * THUMB_WEIGHT[j.joint] : fingers[j.joint])
+        q.setFromAxisAngle(j.axis, j.thumb ? thumb * THUMB_WEIGHT[j.joint] : fingers[j.joint] + (extra?.[j.finger] ?? 0))
         j.bone.quaternion.copy(j.rest).multiply(q)
       }
     },
+  }
+}
+
+/* Biped-style rigs parent the forearm twist bones to the UPPER arm (the
+   game drives them with a controller), so bending only the forearm would
+   leave half its skin behind at the elbow. Such bones are re-attached to the
+   forearm each frame, keeping their rest offset from it. */
+const TWIST = /foretwist|forearmtwist|lowerarmtwist/
+const buildTwistFollowers = (arms: ArmChain[]) => {
+  const followers: { bone: THREE.Object3D; leader: THREE.Object3D; offset: THREE.Matrix4 }[] = []
+  for (const arm of arms) {
+    for (const child of arm.upper.children) {
+      if (child === arm.lower || !TWIST.test(normalizeName(child.name))) continue
+      const offset = arm.lower.matrixWorld.clone().invert().multiply(child.matrixWorld)
+      followers.push({ bone: child, leader: arm.lower, offset })
+    }
+  }
+  const world = new THREE.Matrix4()
+  const parentInverse = new THREE.Matrix4()
+  return () => {
+    for (const f of followers) {
+      if (!f.bone.parent) continue
+      world.multiplyMatrices(f.leader.matrixWorld, f.offset)
+      parentInverse.copy(f.bone.parent.matrixWorld).invert()
+      world.premultiply(parentInverse).decompose(f.bone.position, f.bone.quaternion, f.bone.scale)
+      f.bone.updateMatrixWorld(true)
+    }
   }
 }
 
@@ -166,13 +229,9 @@ const createBlinker = (vrm: VRM) => {
    the scene just shows the card on its own. A missing file under public/ comes
    back from Vite's SPA fallback as index.html with a 200, hence the
    content-type check rather than relying on res.ok. */
-export const loadCharacter = async (
-  url: string,
-  gradientMap: THREE.Texture,
-  grade: Grade,
-  boneNames: BoneNameOverrides = {},
-): Promise<CharacterRig | null> => {
-  let overrides = boneNames
+export const loadCharacter = async (url: string, options: LoadOptions): Promise<CharacterRig | null> => {
+  const { gradientMap, grade, hiddenMaterials, originalMaterials } = options
+  let overrides = options.boneNames ?? {}
   try {
     const res = await fetch(url)
     if (!res.ok || (res.headers.get('content-type') ?? '').includes('text/html')) return null
@@ -222,6 +281,8 @@ export const loadCharacter = async (
       if (!mesh.isMesh) return
       /* posed skinned meshes drift outside their bind-pose bounds */
       mesh.frustumCulled = false
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+      if (hiddenMaterials && materials.some((m) => hiddenMaterials.test(m.name))) mesh.visible = false
       if (vrm) {
         /* VRM ships its own anime shader (MToon) — keep it, just don't
            stack the scene outline on top of the model's own outline pass */
@@ -241,6 +302,10 @@ export const loadCharacter = async (
           if (/Accessory/i.test(m.name)) mesh.visible = false
           grade.apply(m)
         }
+        return
+      }
+      if (originalMaterials) {
+        materials.forEach((m) => grade.apply(m))
         return
       }
       const convert = (m: THREE.Material) => {
@@ -264,7 +329,12 @@ export const loadCharacter = async (
     const root = new THREE.Group()
     root.add(facing)
     root.updateMatrixWorld(true)
-    const box = new THREE.Box3().setFromObject(facing)
+    /* only what's shown counts toward height — hidden props (a sheathed
+       katana, say) would otherwise shrink the character */
+    const box = new THREE.Box3()
+    facing.traverseVisible((o) => {
+      if ((o as THREE.Mesh).isMesh) box.expandByObject(o)
+    })
     const scale = CHARACTER_HEIGHT / Math.max(box.max.y - box.min.y, 1e-3)
     const center = box.getCenter(new THREE.Vector3())
     root.scale.setScalar(scale)
@@ -276,18 +346,35 @@ export const loadCharacter = async (
     const blink = vrm ? createBlinker(vrm) : null
     /* measured in the normalized rest pose, before anything is posed */
     root.updateMatrixWorld(true)
-    const cardHand = vrm ? buildHandRig(vrm, lh, ll) : null
+    const byName = new Map<string, THREE.Object3D>()
+    model.traverse((o) => {
+      const key = normalizeName(o.name)
+      if (!byName.has(key)) byName.set(key, o)
+    })
+    const resolveHandBone: BoneResolver = (name) => {
+      if (vrm) return vrm.humanoid.getRawBoneNode(name as Parameters<typeof vrm.humanoid.getRawBoneNode>[0])
+      for (const alias of HAND_ALIASES[name] ?? []) {
+        const hit = byName.get(alias)
+        if (hit) return hit
+      }
+      return null
+    }
+    const cardHand = buildHandRig(resolveHandBone, lh, ll, 'left')
+    const cardArm = { upper: lu, lower: ll, hand: lh }
+    const otherArm = { upper: ru, lower: rl, hand: rh }
+    const followTwists = buildTwistFollowers([cardArm, otherArm])
 
     return {
       root,
-      cardArm: { upper: lu, lower: ll, hand: lh },
-      otherArm: { upper: ru, lower: rl, hand: rh },
+      cardArm,
+      otherArm,
       cardHand,
       update: (dt) => {
         if (mixer) mixer.update(dt)
         else resetArms()
       },
       postUpdate: (dt) => {
+        followTwists()
         if (!vrm) return
         blink?.(dt)
         vrm.update(dt)

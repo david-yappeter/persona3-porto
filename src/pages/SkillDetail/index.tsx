@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import { MenuBackground } from '../../components/MenuBackground'
 import { SocialLinkScene, type CardFace } from '../../components/SocialLinkScene'
 import { EXPERIENCE } from '../../data/experience'
 import { useFitText } from '../../hooks/FitText'
 import { playSfx } from '../../utils/sfx'
 import './SkillDetail.css'
+
+const MAKOTO_MODEL = `${import.meta.env.BASE_URL}assets/models/makoto/scene.gltf`
+/* props and helper geometry bundled with the Sketchfab rip: katana, gun
+   holster, evoker, and tiny marker quads parked on the knee/elbow joints */
+const MAKOTO_HIDDEN = /^(175_|katana|c0744_gunholder|c0744_syoukanki)/
 
 const ROMAN: [number, string][] = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]
 /* arcana numbering starts at 0 (The Fool) */
@@ -68,7 +74,15 @@ export const SkillDetail = () => {
 
   return (
     <>
-      <SocialLinkScene card={card} cardState="held" />
+      <MenuBackground flip decoText="" />
+      <SocialLinkScene
+        card={card}
+        cardState="held"
+        modelSrc={MAKOTO_MODEL}
+        backdrop={false}
+        hiddenMaterials={MAKOTO_HIDDEN}
+        originalMaterials
+      />
       <div className="skill-detail">
         <div className="skill-detail-header">
           <span className="skill-detail-nav">
@@ -126,6 +140,16 @@ export const SkillDetail = () => {
             <span className="skill-detail-person-role">Placeholder role description goes here.</span>
           </div>
         </div>
+
+        {/* CC BY 4.0 requires crediting the model's author */}
+        <a
+          className="skill-detail-credit"
+          href="https://sketchfab.com/3d-models/makoto-yuki-persona-5-royal-dlc-batlle-bundle-3db577331f5442c79ec7cd0ac181adf2"
+          target="_blank"
+          rel="noreferrer"
+        >
+          3D model: "Makoto Yuki (Persona 5 Royal, DLC Batlle Bundle)" by 雨宮レン · CC BY 4.0
+        </a>
       </div>
     </>
   )
