@@ -5,6 +5,8 @@ import { SocialLinkScene, type CardFace } from '../../components/SocialLinkScene
 import { EXPERIENCE } from '../../data/experience'
 import './SkillLayout.css'
 
+/* seamless ocean loop behind the character on both the list and detail pages */
+const OCEAN_BG = `${import.meta.env.BASE_URL}assets/persona_3_menu_bg_ocean_seamless.mp4`
 const MAKOTO_MODEL = `${import.meta.env.BASE_URL}assets/models/makoto/scene.gltf`
 /* props and helper geometry bundled with the Sketchfab rip: katana, gun
    holster, evoker, and tiny marker quads parked on the knee/elbow joints */
@@ -79,7 +81,7 @@ export const SkillLayout = () => {
 
   return (
     <>
-      <MenuBackground flip decoText={detail ? '' : undefined} />
+      <MenuBackground videoSrc={OCEAN_BG} decoText={detail ? '' : undefined} />
       <SocialLinkScene
         card={card}
         cardState={detail ? 'floating' : 'held'}

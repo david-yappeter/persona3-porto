@@ -339,6 +339,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     last = now
     elapsed += dt
 
+    grade.setOverlay(POSE.overlay)
     const cam = POSE.camera
     pointerSmooth.lerp(LAB.noParallax ? tmp2.set(0, 0) : pointer, 1 - Math.exp(-4 * dt))
     camera.position.set(

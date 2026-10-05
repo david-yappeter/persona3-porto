@@ -17,7 +17,7 @@ export type PreloadAsset = {
  */
 export const PRELOAD_MANIFEST: PreloadAsset[] = [
   { url: asset('assets/persona_3_menu_bg.mp4'), kind: 'fetch' },
-  { url: asset('assets/persona_3_menu_bg_flip.mp4'), kind: 'fetch' },
+  { url: asset('assets/persona_3_menu_bg_ocean_seamless.mp4'), kind: 'fetch' },
   { url: asset('assets/persona_3_menu_bg_entrance.mp4'), kind: 'fetch' },
   { url: asset('sound/deck_ui_slider_up.wav'), kind: 'fetch' },
   { url: asset('sound/deck_ui_slider_down.wav'), kind: 'fetch' },

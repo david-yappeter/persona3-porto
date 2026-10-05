@@ -81,6 +81,20 @@ export const POSE = {
     hair: 1.05,
     accessories: 0,
   },
+  /* see-through look over the page (needs the menu colours on): opacity
+     follows brightness — dark cloth lets the background show through, bright
+     skin/shirt stay solid. Outlines and the card stay opaque. */
+  overlay: {
+    enabled: true,
+    /* opacity of the darkest / brightest parts, 0..1 */
+    dark: 0.4,
+    light: 0.95,
+    /* brightness (0..1) where it switches, and how gradually */
+    cut: 0.45,
+    softness: 0.25,
+    /* keep dark hair solid instead of fading it with the jacket */
+    hairSolid: false,
+  },
   /* second state ("floating"): the card arm lifts with the palm open toward
      the camera while the card leaves the hand and floats in front of the
      chest, facing the camera (it only flips when the face changes). Same
@@ -116,7 +130,7 @@ export const LAB = {
   forceState: '' as '' | 'held' | 'floating',
 }
 
-type Json = number | number[] | { [key: string]: Json }
+type Json = number | boolean | number[] | { [key: string]: Json }
 
 const round = (n: number) => Math.round(n * 1000) / 1000
 
@@ -124,6 +138,7 @@ const toJson = (value: unknown): Json => {
   if (value instanceof THREE.Vector3) return [round(value.x), round(value.y), round(value.z)]
   if (Array.isArray(value)) return value.map(round)
   if (typeof value === 'number') return round(value)
+  if (typeof value === 'boolean') return value
   const out: { [key: string]: Json } = {}
   for (const [k, v] of Object.entries(value as object)) out[k] = toJson(v)
   return out
@@ -145,6 +160,8 @@ export const applyPose = (data: unknown, target: Record<string, unknown> = POSE)
       if (Array.isArray(v)) v.forEach((n, i) => i < current.length && Number.isFinite(n) && (current[i] = n))
     } else if (typeof current === 'number') {
       if (Number.isFinite(v)) target[k] = v
+    } else if (typeof current === 'boolean') {
+      if (typeof v === 'boolean') target[k] = v
     } else if (current && typeof current === 'object') {
       applyPose(v, current as Record<string, unknown>)
     }

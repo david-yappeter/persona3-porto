@@ -167,6 +167,14 @@ export const mountPoseLab = () => {
   floatCard.add(POSE.float.card, 'bobSpeed', 0, 3, 0.05).name('bob speed (/s)')
   floatCard.add(POSE.float.card, 'release', 0, 0.9, 0.01).name('leaves hand at')
 
+  const overlay = gui.addFolder('See-through overlay')
+  overlay.add(POSE.overlay, 'enabled').name('on')
+  overlay.add(POSE.overlay, 'dark', 0, 1, 0.01).name('dark parts opacity')
+  overlay.add(POSE.overlay, 'light', 0, 1, 0.01).name('bright parts opacity')
+  overlay.add(POSE.overlay, 'cut', 0, 1, 0.01).name('brightness cut-off')
+  overlay.add(POSE.overlay, 'softness', 0, 0.5, 0.01).name('fade softness')
+  overlay.add(POSE.overlay, 'hairSolid').name('keep hair solid')
+
   const wind = gui.addFolder('Wind (coat / hair)')
   wind.add(POSE.wind, 'strength', 0, 25, 0.5).name('strength (°)')
   wind.add(POSE.wind, 'direction', -180, 180, 1).name('direction (° 0=→ 90=cam)')

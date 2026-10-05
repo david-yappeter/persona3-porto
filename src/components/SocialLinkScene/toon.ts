@@ -65,29 +65,59 @@ const GRADE_GLSL = /* glsl */ `
     else p3g = mix(vec3(0.74, 0.98, 1.0), vec3(1.0), (p3l - 0.75) / 0.25);
     float p3v = clamp(gl_FragCoord.y / p3ResolutionY, 0.0, 1.0);
     p3g = mix(p3g, p3g * vec3(0.72, 0.55, 1.05), (1.0 - p3v) * 0.55 * (1.0 - p3l * 0.8));
-    gl_FragColor.rgb = p3g;
+    /* see-through overlay: dark areas let the page behind the canvas show
+       through, bright ones stay solid. Opaque materials draw unblended into
+       a premultiplied-alpha canvas, so their colour is premultiplied here;
+       blended ones keep straight colour and just scale their alpha */
+    float p3a = mix(p3AlphaDark, p3AlphaLight, smoothstep(p3AlphaCut - p3AlphaSoft, p3AlphaCut + p3AlphaSoft, p3l));
+    p3a = mix(p3a, max(p3a, p3AlphaLight), P3_HAIR * p3HairSolid);
+    p3a = mix(1.0, p3a, p3OverlayOn);
+    #ifdef OPAQUE
+      gl_FragColor = vec4(p3g * p3a, p3a);
+    #else
+      gl_FragColor = vec4(p3g, gl_FragColor.a * p3a);
+    #endif
   }
 `
+
+export type Overlay = { enabled: boolean; dark: number; light: number; cut: number; softness: number; hairSolid: boolean }
 
 /** `enabled: false` gives a no-op grade, for showing a model in its own colours */
 export const createGrade = (enabled = true) => {
   const resolutionY = { value: 1 }
+  /* shared by every graded material, so one update restyles them all */
+  const overlay = {
+    p3OverlayOn: { value: 0 },
+    p3AlphaDark: { value: 1 },
+    p3AlphaLight: { value: 1 },
+    p3AlphaCut: { value: 0.5 },
+    p3AlphaSoft: { value: 0.2 },
+    p3HairSolid: { value: 0 },
+  }
   const apply = <T extends THREE.Material>(material: T) => {
     if (!enabled) return material
     /* VRM meshes share material instances — only wrap each one once */
     if (material.userData.p3Graded) return material
     material.userData.p3Graded = true
+    /* hair can opt out of the see-through overlay */
+    const hair = /hair/i.test(material.name)
     const previous = material.onBeforeCompile.bind(material)
     material.onBeforeCompile = (shader, renderer) => {
       previous(shader, renderer)
       shader.uniforms.p3ResolutionY = resolutionY
-      shader.fragmentShader = `uniform float p3ResolutionY;\n${shader.fragmentShader}`.replace(
+      Object.assign(shader.uniforms, overlay)
+      const header = [
+        'uniform float p3ResolutionY;',
+        ...Object.keys(overlay).map((name) => `uniform float ${name};`),
+        `#define P3_HAIR ${hair ? '1.0' : '0.0'}`,
+      ].join('\n')
+      shader.fragmentShader = `${header}\n${shader.fragmentShader}`.replace(
         '#include <dithering_fragment>',
         `${GRADE_GLSL}\n#include <dithering_fragment>`,
       )
     }
     const previousKey = material.customProgramCacheKey.bind(material)
-    material.customProgramCacheKey = () => `${previousKey()}|p3grade`
+    material.customProgramCacheKey = () => `${previousKey()}|p3grade${hair ? '-hair' : ''}`
     material.needsUpdate = true
     return material
   }
@@ -96,6 +126,14 @@ export const createGrade = (enabled = true) => {
     /** drawing-buffer height in px, for the bottom-of-screen violet drift */
     setHeight: (px: number) => {
       resolutionY.value = px
+    },
+    setOverlay: (o: Overlay) => {
+      overlay.p3OverlayOn.value = o.enabled ? 1 : 0
+      overlay.p3AlphaDark.value = o.dark
+      overlay.p3AlphaLight.value = o.light
+      overlay.p3AlphaCut.value = o.cut
+      overlay.p3AlphaSoft.value = Math.max(o.softness, 0.001)
+      overlay.p3HairSolid.value = o.hairSolid ? 1 : 0
     },
   }
 }
