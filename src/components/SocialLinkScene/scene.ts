@@ -7,7 +7,9 @@ import { solveTwoBoneIK, swingBone } from './ik'
 import { LAB, POSE } from './pose'
 import { PALETTE, createGrade, createToonGradient } from './toon'
 
-export type CardState = 'held' | 'dangling'
+/* floating = the second pose: open palm, card floating and turning in
+   front of the chest (see POSE.float) */
+export type CardState = 'held' | 'dangling' | 'floating'
 
 export type SceneOptions = {
   modelSrc: string
@@ -37,6 +39,7 @@ const DANGLE_CURL = { fingers: [0.08, 0.08, 0.08] as const, thumb: 0.05 }
 /* card placement for rigs without finger bones */
 const HELD_CARD = { offset: v3(-0.065, 0.1, 0), alongN: 0.022 }
 const HELD_UP = v3(0, 1, 0)
+const WORLD_UP = v3(0, 1, 0)
 
 /* flat offset copy of the character behind it, like the source's grey
    silhouette — done by re-rendering the character from a shifted camera */
@@ -157,6 +160,8 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   let grabbing = false
   let releaseBlend = 0
   let initialized = false
+  /* held (0) <-> floating (1) blend */
+  let floatT = 0
 
   const p = new THREE.Vector3()
   const pPrev = new THREE.Vector3()
@@ -285,6 +290,10 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   const heldQ = new THREE.Quaternion()
   const dangleQ = new THREE.Quaternion()
   const control = new THREE.Vector3()
+  const floatWrist = new THREE.Vector3()
+  const floatTop = new THREE.Vector3()
+  const floatR = new THREE.Quaternion()
+  const floatQ = new THREE.Quaternion()
 
   const faceCamera = (out: THREE.Quaternion, top: THREE.Vector3, up: THREE.Vector3, yaw: number) => {
     center.copy(top).addScaledVector(up, -CARD_H / 2)
@@ -356,7 +365,14 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     stage.updateMatrixWorld(true)
 
     const releaseAllowed = !gateRelease || (ready && elapsed - readyAt > HOLD_AFTER_READY)
-    const next: CardState = targetState === 'dangling' && releaseAllowed ? 'dangling' : 'held'
+    const wanted: CardState = LAB.forceState || targetState
+    /* floating rides on the held state machine (card stays pinned, no
+       lanyard) and blends its own pose/card offsets in via floatT */
+    const next: CardState = wanted === 'dangling' && releaseAllowed ? 'dangling' : 'held'
+    const wantFloat = wanted === 'floating' && releaseAllowed && effective === 'held'
+    floatT = THREE.MathUtils.clamp(floatT + (wantFloat ? dt : -dt) / Math.max(POSE.float.duration, 0.05), 0, 1)
+    const floatE = smooth(floatT)
+    const fl = POSE.float
     if (next !== effective) applyCardState(next)
     card.mesh.visible = ready
     /* the lanyard only reads while the card hangs from it */
@@ -369,6 +385,11 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     if (rig) {
       const reach = elbowReach(rig.cardArm, deg(POSE.cardArm.elbowAngle))
       heldWrist.copy(POSE.cardArm.dir).normalize().applyQuaternion(stageQ).multiplyScalar(reach).add(shoulder)
+      if (floatE > 0) {
+        const floatReach = elbowReach(rig.cardArm, deg(fl.arm.elbowAngle))
+        floatWrist.copy(fl.arm.dir).normalize().applyQuaternion(stageQ).multiplyScalar(floatReach).add(shoulder)
+        heldWrist.lerp(floatWrist, floatE)
+      }
     } else {
       stage.localToWorld(heldWrist.copy(HELD_FALLBACK))
     }
@@ -377,7 +398,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     handTarget.y += Math.sin(elapsed * 1.3) * 0.005
     heldUp.copy(HELD_UP).applyQuaternion(stageQ)
     if (rig) {
-      pole.lerpVectors(POSE.cardArm.pole, DANGLE_POSE.pole, armE).applyQuaternion(stageQ)
+      pole.lerpVectors(POSE.cardArm.pole, fl.arm.pole, floatE).lerp(DANGLE_POSE.pole, armE).applyQuaternion(stageQ)
       const arm = rig.cardArm
       solveTwoBoneIK(arm.upper, arm.lower, arm.hand, handTarget, pole)
       const other = rig.otherArm
@@ -396,6 +417,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
       fingerDir.subVectors(wrist, elbow).normalize()
       const hand = rig.cardHand
       if (hand) {
+        if (floatE > 0) heldR.slerp(floatR.copy(handRotation(hand.restF, hand.restN, fl.hand)), floatE)
         handR.slerpQuaternions(heldR, dangleR, armE)
         handWorldQ.copy(stageQ).multiply(handR).multiply(hand.restQuat)
         if (arm.hand.parent) arm.hand.parent.getWorldQuaternion(parentQ).invert()
@@ -403,11 +425,13 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
         arm.hand.quaternion.copy(parentQ.multiply(handWorldQ))
         arm.hand.updateMatrixWorld(true)
         const f = POSE.fingers
-        const curlAt = (k: 0 | 1 | 2) => THREE.MathUtils.lerp(f.curl[k], DANGLE_CURL.fingers[k], armE)
+        const lerp = THREE.MathUtils.lerp
+        const curlAt = (k: 0 | 1 | 2) => lerp(lerp(f.curl[k], fl.fingers.curl[k], floatE), DANGLE_CURL.fingers[k], armE)
+        const extraAt = (k: 0 | 1 | 2 | 3) => lerp(f.extra[k], fl.fingers.extra[k], floatE) * (1 - armE)
         hand.curl(
           [curlAt(0), curlAt(1), curlAt(2)],
-          THREE.MathUtils.lerp(f.thumb, DANGLE_CURL.thumb, armE),
-          [f.extra[0] * (1 - armE), f.extra[1] * (1 - armE), f.extra[2] * (1 - armE), f.extra[3] * (1 - armE)],
+          lerp(lerp(f.thumb, fl.fingers.thumb, floatE), DANGLE_CURL.thumb, armE),
+          [extraAt(0), extraAt(1), extraAt(2), extraAt(3)],
         )
         arm.hand.updateMatrixWorld(true)
         handF.copy(hand.restF).applyQuaternion(handR).applyQuaternion(stageQ)
@@ -488,7 +512,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
           .addScaledVector(gripU, POSE.thumb.u)
           .addScaledVector(gripW, POSE.thumb.lift)
         thumbFrom.subVectors(thumbTip, thumbBase).normalize()
-        thumbTo.subVectors(thumbTarget, thumbBase).normalize().lerp(thumbFrom, armE).normalize()
+        thumbTo.subVectors(thumbTarget, thumbBase).normalize().lerp(thumbFrom, Math.max(armE, floatE)).normalize()
         swingBone(thumbs[0].bone, thumbFrom, thumbTo)
       }
     } else {
@@ -567,6 +591,18 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     } else {
       cardPos.copy(p)
       card.mesh.quaternion.slerpQuaternions(dangleQ, heldQ, releaseBlend * releaseBlend)
+    }
+    /* floating: the card leaves the opening hand (after `release` of the
+       blend), drifts to its spot and stays there facing the camera, bobbing —
+       it only turns for the face-swap flip; reversed on the way back */
+    if (floatT > 0) {
+      const fc = fl.card
+      const cardE = smooth(THREE.MathUtils.clamp((floatT - fc.release) / Math.max(1 - fc.release, 0.01), 0, 1))
+      stage.localToWorld(floatTop.copy(fc.pos))
+      floatTop.y += CARD_H / 2 + Math.sin(elapsed * fc.bobSpeed * Math.PI * 2) * fc.bob
+      faceCamera(floatQ, floatTop, WORLD_UP, spinYaw)
+      cardPos.lerp(floatTop, cardE)
+      card.mesh.quaternion.slerp(floatQ, cardE)
     }
     card.mesh.position.copy(cardPos)
     card.mesh.updateMatrixWorld()

@@ -58,11 +58,21 @@ export const SkillDetail = () => {
     }
   }, [])
 
+  /* Enter toggles the card between held in the hand and floating in front
+     of the chest (palm open) — the "Click / Enter" confirm key */
+  const [floating, setFloating] = useState(false)
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
       const active = document.activeElement
       if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
+      if (e.key === 'Enter') {
+        if (e.repeat) return
+        e.preventDefault()
+        setFloating((current) => !current)
+        return
+      }
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
       e.preventDefault()
       setI((current) => (current + (e.key === 'ArrowRight' ? 1 : -1) + EXPERIENCE.length) % EXPERIENCE.length)
       playSfx('switchEntry')
@@ -92,7 +102,7 @@ export const SkillDetail = () => {
       <MenuBackground flip decoText="" />
       <SocialLinkScene
         card={card}
-        cardState="held"
+        cardState={floating ? 'floating' : 'held'}
         modelSrc={MAKOTO_MODEL}
         backdrop={false}
         hiddenMaterials={MAKOTO_HIDDEN}

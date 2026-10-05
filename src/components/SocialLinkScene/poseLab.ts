@@ -140,6 +140,33 @@ export const mountPoseLab = () => {
   ;['index', 'middle', 'ring', 'little'].forEach((name, i) => otherHand.add(POSE.otherFingers.extra, i, -0.5, 1.5, 0.01).name(`extra ${name}`))
   otherHand.add(POSE.otherFingers, 'thumb', -0.5, 1.5, 0.01).name('thumb curl')
 
+  /* second pose: preview button flips the page between held and floating */
+  const float = gui.addFolder('Floating pose (2nd state)')
+  const preview = {
+    toggle: () => {
+      LAB.forceState = LAB.forceState === 'floating' ? 'held' : 'floating'
+      toggleButton.name(LAB.forceState === 'floating' ? '▶ Back to held' : '▶ Play floating')
+    },
+  }
+  const toggleButton = float.add(preview, 'toggle').name('▶ Play floating')
+  float.add(POSE.float, 'duration', 0.1, 3, 0.05).name('blend time (s)')
+  const floatArm = float.addFolder('arm')
+  floatArm.add(POSE.float.arm, 'elbowAngle', 20, 180, 1).name('elbow (° 180=straight)')
+  vector(floatArm, POSE.float.arm.dir, 'wrist direction', [R(-1, 1), R(-1, 1), R(-1, 1)], BODY_AXES, 0.01)
+  vector(floatArm, POSE.float.arm.pole, 'elbow points', [R(-1.5, 1.5), R(-1.5, 1.5), R(-1.5, 1.5)], BODY_AXES, 0.05)
+  const floatHand = float.addFolder('hand rotation').close()
+  vector(floatHand, POSE.float.hand.f, 'fingers point', [R(-2, 2), R(-2, 2), R(-2, 2)], BODY_AXES, 0.05)
+  vector(floatHand, POSE.float.hand.n, 'palm faces', [R(-2, 2), R(-2, 2), R(-2, 2)], BODY_AXES, 0.05)
+  const floatFingers = float.addFolder('fingers').close()
+  ;['knuckle', 'middle joint', 'tip joint'].forEach((name, i) => floatFingers.add(POSE.float.fingers.curl, i, -0.5, 1.5, 0.01).name(`curl ${name}`))
+  ;['index', 'middle', 'ring', 'little'].forEach((name, i) => floatFingers.add(POSE.float.fingers.extra, i, -0.5, 1.5, 0.01).name(`extra ${name}`))
+  floatFingers.add(POSE.float.fingers, 'thumb', -0.5, 1.5, 0.01).name('thumb curl')
+  const floatCard = float.addFolder('floating card')
+  vector(floatCard, POSE.float.card.pos, 'position', [R(-0.5, 0.5), R(0.8, 1.8), R(-0.1, 0.6)])
+  floatCard.add(POSE.float.card, 'bob', 0, 0.05, 0.001).name('bob height (m)')
+  floatCard.add(POSE.float.card, 'bobSpeed', 0, 3, 0.05).name('bob speed (/s)')
+  floatCard.add(POSE.float.card, 'release', 0, 0.9, 0.01).name('leaves hand at')
+
   const wind = gui.addFolder('Wind (coat / hair)')
   wind.add(POSE.wind, 'strength', 0, 25, 0.5).name('strength (°)')
   wind.add(POSE.wind, 'direction', -180, 180, 1).name('direction (° 0=→ 90=cam)')
@@ -155,6 +182,7 @@ export const mountPoseLab = () => {
 
   return () => {
     LAB.noParallax = false
+    LAB.forceState = ''
     gui.destroy()
   }
 }

@@ -66,7 +66,7 @@ export const POSE = {
   /* wind on the rig's cloth chains (coat tails, hair, ribbon/cord); rigs
      without them ignore it. strength/flare are degrees per chain segment */
   wind: {
-    strength: 13.5,
+    strength: 20.5,
     /* 0 = blows toward screen right, 90 = toward the camera, 180 = left */
     direction: -65,
     /* outward lift of the hem all round, independent of direction */
@@ -81,12 +81,40 @@ export const POSE = {
     hair: 1.05,
     accessories: 0,
   },
+  /* second state ("floating"): the card arm lifts with the palm open toward
+     the camera while the card leaves the hand and floats in front of the
+     chest, facing the camera (it only flips when the face changes). Same
+     meaning as cardArm / cardHand / fingers. */
+  float: {
+    /* seconds to blend between held and floating, either way */
+    duration: 0.3,
+    arm: { dir: v3(0.07, -0.01, 1), elbowAngle: 115, pole: v3(0.2, -0.75, -0.5) },
+    hand: { f: v3(0.25, 0.4, 0.55), n: v3(-0.85, -0.55, -0.85) },
+    fingers: {
+      curl: [0.07, 0.03, -0.07] as [number, number, number],
+      thumb: -0.03,
+      extra: [0.02, 0, 0.03, 0.29] as [number, number, number, number],
+    },
+    card: {
+      /* card centre, character space */
+      pos: v3(0.035, 1.395, -0.1),
+      /* up-down drift: metres, cycles per second */
+      bob: 0.014,
+      bobSpeed: 0.2,
+      /* how late in the blend the card leaves the hand (0 = at once) */
+      release: 0,
+    },
+  },
 }
 
 export type Pose = typeof POSE
 
 /** dev-only switches, never part of the copied config */
-export const LAB = { noParallax: false }
+export const LAB = {
+  noParallax: false,
+  /* overrides the page's cardState while previewing */
+  forceState: '' as '' | 'held' | 'floating',
+}
 
 type Json = number | number[] | { [key: string]: Json }
 

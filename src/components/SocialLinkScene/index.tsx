@@ -8,8 +8,9 @@ export type { CardFace, CardState, BoneNameOverrides }
 
 type SocialLinkSceneProps = {
   card: CardFace
-  /** 'held' = gripped at the chest, 'dangling' = hanging off the raised hand
-      on its lanyard; changing it animates between the two */
+  /** 'held' = gripped at the chest, 'floating' = palm open, card floating
+      and turning in front of the chest (POSE.float), 'dangling' = hanging
+      off the raised hand on its lanyard; changing it animates between them */
   cardState?: CardState
   /** rigged GLB/glTF/VRM; until it loads only the card is shown */
   modelSrc?: string
