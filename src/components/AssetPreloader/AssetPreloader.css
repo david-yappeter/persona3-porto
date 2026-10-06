@@ -111,3 +111,33 @@
     transform: translateX(0);
   }
 }
+
+.asset-preloader-music {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: 1.4em;
+  padding: 0.45em 1.1em;
+  border: 1px solid rgba(89, 216, 242, 0.45);
+  background: rgba(5, 2, 8, 0.6);
+  font-family: 'Eurostile Extended', sans-serif;
+  font-size: 0.8rem;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9fdcec;
+  cursor: pointer;
+  transition:
+    color 120ms,
+    border-color 120ms;
+}
+
+.asset-preloader-music:hover {
+  color: #fff;
+  border-color: #59d8f2;
+}
+
+.asset-preloader-music[aria-pressed='true'] {
+  color: rgba(159, 220, 236, 0.5);
+  border-color: rgba(89, 216, 242, 0.2);
+}
