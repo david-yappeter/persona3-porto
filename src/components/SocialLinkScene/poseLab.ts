@@ -2,7 +2,7 @@ import GUI from 'lil-gui'
 import type * as THREE from 'three'
 import { DEFAULT_POSE, LAB, POSE, applyPose, poseToJson } from './pose'
 
-/* dev-only slider panel over the live scene (`/skill/0?lab`): every change
+/* dev-only slider panel over the live scene (`/experiences/0?lab`): every change
    writes straight into POSE, survives reloads via localStorage, and "Copy
    config" puts the whole pose on the clipboard as JSON */
 

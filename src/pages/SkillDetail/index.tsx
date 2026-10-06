@@ -20,7 +20,7 @@ export const SkillDetail = () => {
   const { active, setActive } = useSkillContext()
 
   useEffect(() => {
-    if (!validInitial) void navigate('/skill', { replace: true })
+    if (!validInitial) void navigate('/experiences', { replace: true })
     else setActive(initial)
   }, [validInitial, initial, navigate, setActive])
 

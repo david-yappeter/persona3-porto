@@ -11,7 +11,7 @@ export type PreloadAsset =
       hashed file name isn't known here, so it too gets a flat byte weight */
   | { kind: 'module'; load: () => Promise<unknown>; weight: number }
 
-/* everything GLTFLoader requests for the /skill character: the .gltf, its
+/* everything GLTFLoader requests for the /experiences character: the .gltf, its
    buffer and every texture it references (the hidden props' included —
    the loader fetches those regardless) */
 const MAKOTO = 'assets/models/makoto/'
@@ -39,9 +39,9 @@ const EXPERIENCE_IMAGES = [
 ]
 
 /*
- * What the app plays on the menu and the /skill pages — the background
+ * What the app plays on the menu and the /experiences pages — the background
  * videos, every sfx in utils/sfx.ts, the first music track, the font, the
- * /skill 3D character with its three.js code, and the experience images.
+ * /experiences 3D character with its three.js code, and the experience images.
  * Deliberately excludes the other three music tracks (9MB combined), which
  * load on demand, and files nothing references (protagonist.glb, the flip
  * video, head_0*.png, the unused deck_ui_* sounds).

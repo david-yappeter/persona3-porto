@@ -29,7 +29,7 @@ export const Skill = () => {
       if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return
       e.preventDefault()
       /* the "in" cue comes from useNavigationSound once the route changes */
-      void navigate(`/skill/${selected}`)
+      void navigate(`/experiences/${selected}`)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

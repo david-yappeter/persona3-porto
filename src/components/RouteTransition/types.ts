@@ -10,7 +10,7 @@ export enum RouteTransitionKind {
       chases behind it revealing the incoming page. */
   DoubleRipple = 'double-ripple',
   /** No effect: the new route swaps in place. For pages under a shared
-      persistent layout (e.g. /skill <-> /skill/:index, where the 3D scene
+      persistent layout (e.g. /experiences <-> /experiences/:index, where the 3D scene
       itself animates the change) — a snapshot effect would freeze it. */
   None = 'none',
 }

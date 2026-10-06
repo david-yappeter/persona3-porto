@@ -18,14 +18,14 @@ export type MenuEntry = {
 
 export const MENU_ITEMS: MenuEntry[] = [
   {
-    label: 'SKILL',
+    label: 'EXPERIENCES',
     indent: 0.35,
     scale: 1.0,
     rot: -7,
     skew: -20,
     tint: '#4fe0f8',
     alpha: 0.98,
-    to: '/skill',
+    to: '/experiences',
   },
   { label: 'ITEM', indent: 0.3, scale: 1.02, rot: -11, skew: -18, tint: '#3ccfec', alpha: 1 },
   { label: 'EQUIP', indent: 0.4, scale: 1.0, rot: -6, skew: -22, tint: '#58e6fb', alpha: 0.93 },

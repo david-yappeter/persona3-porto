@@ -31,8 +31,8 @@ const toNumeral = (n: number) => {
 }
 
 export type SkillOutletContext = {
-  /** the experience entry the card shows — the list's cursor on /skill,
-      the entry being read on /skill/:index */
+  /** the experience entry the card shows — the list's cursor on /experiences,
+      the entry being read on /experiences/:index */
   active: number
   setActive: (index: number) => void
 }
@@ -45,7 +45,7 @@ const parseIndex = (raw: string | undefined) => {
 }
 
 /*
- * Shared shell for /skill and /skill/:index. The menu video and the 3D
+ * Shared shell for /experiences and /experiences/:index. The menu video and the 3D
  * scene live here, so they stay mounted across the route change (the root
  * RouteTransition plays no effect inside this section) — instead the
  * character animates it: card held in the hand on the list, palm open with
@@ -56,7 +56,7 @@ export const SkillLayout = () => {
   const detail = index !== undefined
   const [active, setActive] = useState(() => parseIndex(index) ?? 0)
 
-  /* dev-only pose lab: /skill?lab or /skill/0?lab adds a slider panel that
+  /* dev-only pose lab: /experiences?lab or /experiences/0?lab adds a slider panel that
      edits the character's pose live (stripped from production builds) */
   useEffect(() => {
     if (!import.meta.env.DEV || !new URLSearchParams(window.location.search).has('lab')) return

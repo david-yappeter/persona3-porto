@@ -16,8 +16,8 @@ export type { RouteTransitionRule }
 type RouteTransitionProps = {
   /** used for any from/to pair not covered by `rules` */
   defaultKind: RouteTransitionKind
-  /** per-direction overrides — e.g. "/" -> "/skill" can play a different
-      transition than "/skill" -> "/" */
+  /** per-direction overrides — e.g. "/" -> "/experiences" can play a different
+      transition than "/experiences" -> "/" */
   rules?: RouteTransitionRule[]
 }
 
