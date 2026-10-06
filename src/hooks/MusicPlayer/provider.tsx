@@ -17,17 +17,19 @@ const FADE_OUT = 4
 const clamp01 = (n: number) => Math.min(Math.max(n, 0), 1)
 
 const VOLUME_KEY = 'persona:volume'
+/** level until the visitor moves the slider */
+const DEFAULT_VOLUME = 0.5
 
 /* localStorage throws in private modes and sandboxed frames, so every access
    is guarded — a failure just means the level isn't remembered */
 const readStoredVolume = () => {
   try {
     const raw = localStorage.getItem(VOLUME_KEY)
-    if (raw === null) return 1
+    if (raw === null) return DEFAULT_VOLUME
     const parsed = Number.parseFloat(raw)
-    return Number.isFinite(parsed) ? clamp01(parsed) : 1
+    return Number.isFinite(parsed) ? clamp01(parsed) : DEFAULT_VOLUME
   } catch {
-    return 1
+    return DEFAULT_VOLUME
   }
 }
 
