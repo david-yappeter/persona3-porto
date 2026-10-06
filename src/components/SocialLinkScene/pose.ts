@@ -93,13 +93,16 @@ export const POSE = {
   overlay: {
     enabled: true,
     /* opacity of the darkest / brightest parts, 0..1 */
-    dark: 0.4,
-    light: 0.95,
+    dark: 0,
+    light: 1,
     /* brightness (0..1) where it switches, and how gradually */
-    cut: 0.45,
-    softness: 0.25,
+    cut: 0.52,
+    softness: 0.35,
     /* keep dark hair solid instead of fading it with the jacket */
-    hairSolid: false,
+    hairSolid: true,
+    /* the black ink line around the character (off blends it into the
+       page; the card never has one) */
+    outline: false,
   },
   /* second state ("floating"): the card arm lifts with the palm open toward
      the camera while the card leaves the hand and floats in front of the

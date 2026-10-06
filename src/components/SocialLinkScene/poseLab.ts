@@ -194,6 +194,7 @@ export const mountPoseLab = () => {
   overlay.add(POSE.overlay, 'cut', 0, 1, 0.01).name('brightness cut-off')
   overlay.add(POSE.overlay, 'softness', 0, 0.5, 0.01).name('fade softness')
   overlay.add(POSE.overlay, 'hairSolid').name('keep hair solid')
+  overlay.add(POSE.overlay, 'outline').name('black outline')
 
   const wind = gui.addFolder('Wind (coat / hair)')
   wind.add(POSE.wind, 'strength', 0, 25, 0.5).name('strength (°)')
