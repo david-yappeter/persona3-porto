@@ -19,6 +19,32 @@ const vector = (parent: GUI, v: THREE.Vector3, title: string, ranges: [Range, Ra
   return folder
 }
 
+type Look = { pitch: number; yaw: number; roll: number }
+const look = (parent: GUI, neck: Look, head: Look, title: string) => {
+  const folder = parent.addFolder(title)
+  ;([['neck', neck], ['head', head]] as const).forEach(([name, o]) => {
+    folder.add(o, 'pitch', -60, 60, 0.5).name(`${name} pitch (° + nod down)`)
+    folder.add(o, 'yaw', -80, 80, 0.5).name(`${name} yaw (° + his left)`)
+    folder.add(o, 'roll', -45, 45, 0.5).name(`${name} roll (° + his right)`)
+  })
+  return folder
+}
+
+type FreeArm = Pick<typeof POSE, 'otherArm' | 'otherHand' | 'otherFingers'>
+/* free arm + hand controls, shared by the held pose and the floating one */
+const freeArm = (armFolder: GUI, handFolder: GUI, p: FreeArm) => {
+  const R = (min: number, max: number): Range => [min, max]
+  armFolder.add(p.otherArm, 'elbowAngle', 20, 180, 1).name('elbow (° 180=straight)')
+  vector(armFolder, p.otherArm.hand, 'wrist aim', [R(-0.5, 0.2), R(0.4, 1.5), R(-0.3, 0.4)])
+  vector(armFolder, p.otherArm.pole, 'elbow points', [R(-1.5, 1.5), R(-1.5, 1.5), R(-1.5, 1.5)], BODY_AXES, 0.05)
+  handFolder.add(p.otherHand, 'bend', -90, 90, 1).name('wrist bend (° + palm)')
+  handFolder.add(p.otherHand, 'side', -60, 60, 1).name('wrist side (° + thumb)')
+  handFolder.add(p.otherHand, 'twist', -120, 120, 1).name('wrist twist (°)')
+  ;['knuckle', 'middle joint', 'tip joint'].forEach((name, i) => handFolder.add(p.otherFingers.curl, i, -0.5, 1.5, 0.01).name(`curl ${name}`))
+  ;['index', 'middle', 'ring', 'little'].forEach((name, i) => handFolder.add(p.otherFingers.extra, i, -0.5, 1.5, 0.01).name(`extra ${name}`))
+  handFolder.add(p.otherFingers, 'thumb', -0.5, 1.5, 0.01).name('thumb curl')
+}
+
 const save = () => {
   try {
     localStorage.setItem(STORAGE_KEY, poseToJson())
@@ -104,6 +130,8 @@ export const mountPoseLab = () => {
   body.add(POSE.body, 'turn', -60, 60, 0.5).name('turn (°)')
   body.add(POSE.body, 'cardHandScale', 0.8, 1.5, 0.01).name('card hand scale')
 
+  look(gui, POSE.neck, POSE.head, 'Neck & head')
+
   const cardArm = gui.addFolder('Card arm (his left)')
   cardArm.add(POSE.cardArm, 'elbowAngle', 20, 180, 1).name('elbow (° 180=straight)')
   vector(cardArm, POSE.cardArm.dir, 'wrist direction', [R(-1, 1), R(-1, 1), R(-1, 1)], BODY_AXES, 0.01)
@@ -127,18 +155,7 @@ export const mountPoseLab = () => {
   grip.add(POSE.grip, 'edgeV', -0.5, 0.5, 0.005).name('finger height on card')
   grip.add(POSE.grip, 'clearance', 0, 0.04, 0.001).name('card behind fingers')
 
-  const other = gui.addFolder('Free arm (his right)')
-  other.add(POSE.otherArm, 'elbowAngle', 20, 180, 1).name('elbow (° 180=straight)')
-  vector(other, POSE.otherArm.hand, 'wrist aim', [R(-0.5, 0.2), R(0.4, 1.5), R(-0.3, 0.4)])
-  vector(other, POSE.otherArm.pole, 'elbow points', [R(-1.5, 1.5), R(-1.5, 1.5), R(-1.5, 1.5)], BODY_AXES, 0.05)
-
-  const otherHand = gui.addFolder('Free hand (his right)')
-  otherHand.add(POSE.otherHand, 'bend', -90, 90, 1).name('wrist bend (° + palm)')
-  otherHand.add(POSE.otherHand, 'side', -60, 60, 1).name('wrist side (° + thumb)')
-  otherHand.add(POSE.otherHand, 'twist', -120, 120, 1).name('wrist twist (°)')
-  ;['knuckle', 'middle joint', 'tip joint'].forEach((name, i) => otherHand.add(POSE.otherFingers.curl, i, -0.5, 1.5, 0.01).name(`curl ${name}`))
-  ;['index', 'middle', 'ring', 'little'].forEach((name, i) => otherHand.add(POSE.otherFingers.extra, i, -0.5, 1.5, 0.01).name(`extra ${name}`))
-  otherHand.add(POSE.otherFingers, 'thumb', -0.5, 1.5, 0.01).name('thumb curl')
+  freeArm(gui.addFolder('Free arm (his right)'), gui.addFolder('Free hand (his right)'), POSE)
 
   /* second pose: preview button flips the page between held and floating */
   const float = gui.addFolder('Floating pose (2nd state)')
@@ -150,6 +167,8 @@ export const mountPoseLab = () => {
   }
   const toggleButton = float.add(preview, 'toggle').name('▶ Play floating')
   float.add(POSE.float, 'duration', 0.1, 3, 0.05).name('blend time (s)')
+  float.add(POSE.float.body, 'turn', -60, 60, 0.5).name('body turn (°)')
+  look(float, POSE.float.neck, POSE.float.head, 'neck & head').close()
   const floatArm = float.addFolder('arm')
   floatArm.add(POSE.float.arm, 'elbowAngle', 20, 180, 1).name('elbow (° 180=straight)')
   vector(floatArm, POSE.float.arm.dir, 'wrist direction', [R(-1, 1), R(-1, 1), R(-1, 1)], BODY_AXES, 0.01)
@@ -166,6 +185,7 @@ export const mountPoseLab = () => {
   floatCard.add(POSE.float.card, 'bob', 0, 0.05, 0.001).name('bob height (m)')
   floatCard.add(POSE.float.card, 'bobSpeed', 0, 3, 0.05).name('bob speed (/s)')
   floatCard.add(POSE.float.card, 'release', 0, 0.9, 0.01).name('leaves hand at')
+  freeArm(float.addFolder('free arm (his right)').close(), float.addFolder('free hand (his right)').close(), POSE.float)
 
   const overlay = gui.addFolder('See-through overlay')
   overlay.add(POSE.overlay, 'enabled').name('on')

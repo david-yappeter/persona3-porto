@@ -24,6 +24,12 @@ export const POSE = {
     /* >1 exaggerates the card hand for an anime close-up; 1 = as modelled */
     cardHandScale: 1.1,
   },
+  /* neck and head, turned on top of the model's own pose (0 = as
+     modelled): pitch + = nod down, yaw + = look toward his left (screen
+     right), roll + = tilt toward his right shoulder. The neck carries the
+     head with it; the shoulders stay put. */
+  neck: { pitch: 0, yaw: 0, roll: 0 },
+  head: { pitch: 0, yaw: 0, roll: 0 },
   /* held: elbow bent to `elbowAngle` (180 = straight) and tucked against the
      side, the hand reaching from the shoulder along `dir` — the reach length
      comes from the real bone lengths, so the angle is exact; pole = which
@@ -97,11 +103,15 @@ export const POSE = {
   },
   /* second state ("floating"): the card arm lifts with the palm open toward
      the camera while the card leaves the hand and floats in front of the
-     chest, facing the camera (it only flips when the face changes). Same
-     meaning as cardArm / cardHand / fingers. */
+     chest, facing the camera (it only flips when the face changes). Every
+     field means the same as its held counterpart above (arm = cardArm,
+     hand = cardHand); the whole body blends between the two. */
   float: {
     /* seconds to blend between held and floating, either way */
     duration: 0.3,
+    body: { turn: -25 },
+    neck: { pitch: 0, yaw: 0, roll: 0 },
+    head: { pitch: 0, yaw: 0, roll: 0 },
     arm: { dir: v3(0.07, -0.01, 1), elbowAngle: 115, pole: v3(0.2, -0.75, -0.5) },
     hand: { f: v3(0.25, 0.4, 0.55), n: v3(-0.85, -0.55, -0.85) },
     fingers: {
@@ -117,6 +127,13 @@ export const POSE = {
       bobSpeed: 0.2,
       /* how late in the blend the card leaves the hand (0 = at once) */
       release: 0,
+    },
+    otherArm: { hand: v3(-0.24, 0.4, 0.03), elbowAngle: 140, pole: v3(0, 0.05, -0.85) },
+    otherHand: { bend: 6, side: -12, twist: 16 },
+    otherFingers: {
+      curl: [0.3, 0.26, 0.27] as [number, number, number],
+      thumb: 0.01,
+      extra: [0.05, -0.02, -0.01, -0.01] as [number, number, number, number],
     },
   },
 }

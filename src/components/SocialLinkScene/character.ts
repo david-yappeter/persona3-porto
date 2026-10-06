@@ -38,6 +38,11 @@ export type CharacterRig = {
   /** null when the rig's finger bones can't be identified */
   cardHand: HandRig | null
   otherHand: HandRig | null
+  /** turns the neck then the head by these world-space rotations about
+      their own joints (applied over rest, call after update and before
+      IK); the shoulders keep their place even on rigs whose clavicles hang
+      off the neck. A no-op for a rig without the bones. */
+  look: (neck: THREE.Quaternion, head: THREE.Quaternion) => void
   /** before IK: reset arms to rest / advance animation */
   update: (dt: number) => void
   /** after IK: hair/cloth physics, blinking */
@@ -45,7 +50,9 @@ export type CharacterRig = {
   dispose: () => void
 }
 
-export type BoneNameOverrides = Partial<Record<'leftUpperArm' | 'leftLowerArm' | 'leftHand' | 'rightUpperArm' | 'rightLowerArm' | 'rightHand', string>>
+export type BoneNameOverrides = Partial<
+  Record<'leftUpperArm' | 'leftLowerArm' | 'leftHand' | 'rightUpperArm' | 'rightLowerArm' | 'rightHand' | 'neck' | 'head', string>
+>
 
 export type LoadOptions = {
   gradientMap: THREE.Texture
@@ -89,6 +96,8 @@ const BONE_CANDIDATES: Record<keyof BoneNameOverrides, string[]> = {
   rightUpperArm: ['rightarm', 'rightupperarm', 'jbiprupperarm', 'upperarmr', 'upperarmright', 'rupperarm', 'bip01rupperarm'],
   rightLowerArm: ['rightforearm', 'rightlowerarm', 'jbiprlowerarm', 'forearmr', 'lowerarmr', 'forearmright', 'rforearm', 'bip01rforearm'],
   rightHand: ['righthand', 'jbiprhand', 'handr', 'handright', 'rhand', 'bip01rhand'],
+  neck: ['neck', 'jbipneck', 'neck01', 'bip01neck'],
+  head: ['head', 'jbiphead', 'bip01head'],
 }
 
 /* Sketchfab exports append a node index ("Bip01_L_UpperArm_0112") — drop it */
@@ -99,7 +108,9 @@ const normalizeName = (name: string) =>
     .replace(/[^a-z0-9]/g, '')
     .replace(/^mixamorig\d*/, '')
 
-const findBone = (root: THREE.Object3D, key: keyof BoneNameOverrides, overrides: BoneNameOverrides) => {
+/* exactOnly: no suffix matching — "head" would also hit mesh helpers like
+   "geo head" */
+const findBone = (root: THREE.Object3D, key: keyof BoneNameOverrides, overrides: BoneNameOverrides, exactOnly = false) => {
   const nodes: THREE.Object3D[] = []
   root.traverse((o) => nodes.push(o))
   const exact = overrides[key]
@@ -108,7 +119,7 @@ const findBone = (root: THREE.Object3D, key: keyof BoneNameOverrides, overrides:
   const named = nodes.map((o) => [normalizeName(o.name), o] as const)
   return (
     named.find(([n]) => candidates.includes(n))?.[1] ??
-    named.find(([n]) => candidates.some((c) => n.endsWith(c)))?.[1] ??
+    (exactOnly ? null : named.find(([n]) => candidates.some((c) => n.endsWith(c)))?.[1]) ??
     null
   )
 }
@@ -116,6 +127,63 @@ const findBone = (root: THREE.Object3D, key: keyof BoneNameOverrides, overrides:
 const restPoseKeeper = (bones: THREE.Object3D[]) => {
   const rest = bones.map((b) => b.quaternion.clone())
   return () => bones.forEach((b, i) => b.quaternion.copy(rest[i]))
+}
+
+/* like restPoseKeeper, the whole local transform — look() rewrites the
+   pinned bones' position and scale too */
+const restTransformKeeper = (bones: THREE.Object3D[]) => {
+  const rest = bones.map((b) => [b.position.clone(), b.quaternion.clone(), b.scale.clone()] as const)
+  return () =>
+    bones.forEach((b, i) => {
+      b.position.copy(rest[i][0])
+      b.quaternion.copy(rest[i][1])
+      b.scale.copy(rest[i][2])
+    })
+}
+
+/** neck/head turning, see CharacterRig.look */
+const buildLook = (neck: THREE.Object3D | null, head: THREE.Object3D | null, arms: THREE.Object3D[]) => {
+  /* the neck's child on the way to each upper arm (the clavicles, in a
+     3ds Max Biped) — pinned in world space while the neck turns */
+  const pinned = neck
+    ? arms
+        .map((bone) => {
+          let o: THREE.Object3D | null = bone
+          while (o && o.parent !== neck) o = o.parent
+          return o
+        })
+        .filter((o): o is THREE.Object3D => !!o && o !== head)
+    : []
+  const reset = restTransformKeeper([neck, head, ...pinned].filter((o): o is THREE.Object3D => !!o))
+  const saved = pinned.map(() => new THREE.Matrix4())
+  const worldQ = new THREE.Quaternion()
+  const parentQ = new THREE.Quaternion()
+  const inv = new THREE.Matrix4()
+
+  /* bone's world rotation becomes delta * world, about its own origin */
+  const turn = (bone: THREE.Object3D, delta: THREE.Quaternion) => {
+    bone.getWorldQuaternion(worldQ).premultiply(delta)
+    if (bone.parent) bone.parent.getWorldQuaternion(parentQ).invert()
+    else parentQ.identity()
+    bone.quaternion.copy(parentQ.multiply(worldQ))
+    bone.updateMatrixWorld(true)
+  }
+
+  return {
+    reset,
+    look: (neckDelta: THREE.Quaternion, headDelta: THREE.Quaternion) => {
+      if (neck) {
+        pinned.forEach((o, i) => saved[i].copy(o.matrixWorld))
+        turn(neck, neckDelta)
+        pinned.forEach((o, i) => {
+          inv.copy(neck.matrixWorld).invert()
+          inv.multiply(saved[i]).decompose(o.position, o.quaternion, o.scale)
+          o.updateMatrixWorld(true)
+        })
+      }
+      if (head) turn(head, headDelta)
+    },
+  }
 }
 
 const FINGERS = ['Index', 'Middle', 'Ring', 'Little'] as const
@@ -279,6 +347,8 @@ export const loadCharacter = async (url: string, options: LoadOptions): Promise<
         rightUpperArm: raw('rightUpperArm'),
         rightLowerArm: raw('rightLowerArm'),
         rightHand: raw('rightHand'),
+        neck: raw('neck'),
+        head: raw('head'),
         ...overrides,
       }
     }
@@ -365,6 +435,7 @@ export const loadCharacter = async (url: string, options: LoadOptions): Promise<
     const mixer = !vrm && gltf.animations.length ? new THREE.AnimationMixer(model) : null
     if (mixer) mixer.clipAction(gltf.animations[0]).play()
     const resetArms = restPoseKeeper([lu, ll, lh, ru, rl, rh])
+    const looker = buildLook(findBone(model, 'neck', overrides, true), findBone(model, 'head', overrides, true), [lu, ru])
     const blink = vrm ? createBlinker(vrm) : null
     /* measured in the normalized rest pose, before anything is posed */
     root.updateMatrixWorld(true)
@@ -395,11 +466,13 @@ export const loadCharacter = async (url: string, options: LoadOptions): Promise<
       otherArm,
       cardHand,
       otherHand,
+      look: looker.look,
       update: (dt) => {
         /* always from rest first: wrist() turns the hand relative to its
            current pose, which must not carry over between frames on bones
            an animation clip doesn't key */
         resetArms()
+        looker.reset()
         mixer?.update(dt)
       },
       postUpdate: (dt) => {

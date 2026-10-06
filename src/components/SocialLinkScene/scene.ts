@@ -262,6 +262,20 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     const foreLen = reachElbow.distanceTo(arm.hand.getWorldPosition(reachWrist))
     return Math.sqrt(upperLen ** 2 + foreLen ** 2 - 2 * upperLen * foreLen * Math.cos(angle))
   }
+
+  const neckQ = new THREE.Quaternion()
+  const headQ = new THREE.Quaternion()
+  const lookEuler = new THREE.Euler(0, 0, 0, 'YXZ')
+  const lookQ = new THREE.Quaternion()
+  const stageInvQ = new THREE.Quaternion()
+  type Look = { pitch: number; yaw: number; roll: number }
+  /* held -> floating blend of a neck/head turn (character-space degrees),
+     as the world-space rotation rig.look() takes: yaw, then pitch, then roll */
+  const lookDelta = (out: THREE.Quaternion, held: Look, float: Look, e: number) => {
+    const mix = (k: keyof Look) => deg(THREE.MathUtils.lerp(held[k], float[k], e))
+    lookQ.setFromEuler(lookEuler.set(mix('pitch'), mix('yaw'), mix('roll')))
+    return out.copy(stageQ).multiply(lookQ).multiply(stageInvQ.copy(stageQ).invert())
+  }
   const gripU = new THREE.Vector3()
   const gripV = new THREE.Vector3()
   const gripW = new THREE.Vector3()
@@ -355,17 +369,6 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     }
     background?.update(dt)
 
-    /* breathing */
-    stage.position.y = Math.sin(elapsed * 1.7) * 0.003
-    stage.rotation.y = deg(POSE.body.turn)
-    stageQ.setFromEuler(stage.rotation)
-    if (rig) {
-      rig.cardArm.hand.scale.setScalar(POSE.body.cardHandScale)
-      if (rig.cardHand) heldR.copy(handRotation(rig.cardHand.restF, rig.cardHand.restN, POSE.cardHand))
-    }
-    rig?.update(dt)
-    stage.updateMatrixWorld(true)
-
     const releaseAllowed = !gateRelease || (ready && elapsed - readyAt > HOLD_AFTER_READY)
     const wanted: CardState = LAB.forceState || targetState
     /* floating rides on the held state machine (card stays pinned, no
@@ -375,6 +378,20 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     floatT = THREE.MathUtils.clamp(floatT + (wantFloat ? dt : -dt) / Math.max(POSE.float.duration, 0.05), 0, 1)
     const floatE = smooth(floatT)
     const fl = POSE.float
+    const lerp = THREE.MathUtils.lerp
+
+    /* breathing */
+    stage.position.y = Math.sin(elapsed * 1.7) * 0.003
+    stage.rotation.y = deg(lerp(POSE.body.turn, fl.body.turn, floatE))
+    stageQ.setFromEuler(stage.rotation)
+    if (rig) {
+      rig.cardArm.hand.scale.setScalar(POSE.body.cardHandScale)
+      if (rig.cardHand) heldR.copy(handRotation(rig.cardHand.restF, rig.cardHand.restN, POSE.cardHand))
+    }
+    rig?.update(dt)
+    stage.updateMatrixWorld(true)
+    rig?.look(lookDelta(neckQ, POSE.neck, fl.neck, floatE), lookDelta(headQ, POSE.head, fl.head, floatE))
+
     if (next !== effective) applyCardState(next)
     card.mesh.visible = ready
     /* the lanyard only reads while the card hangs from it */
@@ -404,15 +421,24 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
       const arm = rig.cardArm
       solveTwoBoneIK(arm.upper, arm.lower, arm.hand, handTarget, pole)
       const other = rig.otherArm
-      const otherReach = elbowReach(other, deg(POSE.otherArm.elbowAngle))
-      stage.localToWorld(elbow.copy(POSE.otherArm.hand))
+      const oa = POSE.otherArm
+      const otherReach = elbowReach(other, deg(lerp(oa.elbowAngle, fl.otherArm.elbowAngle, floatE)))
+      stage.localToWorld(elbow.lerpVectors(oa.hand, fl.otherArm.hand, floatE))
       elbow.sub(shoulder).setLength(otherReach).add(shoulder)
-      solveTwoBoneIK(other.upper, other.lower, other.hand, elbow, tmp.copy(POSE.otherArm.pole).applyQuaternion(stageQ))
+      tmp.lerpVectors(oa.pole, fl.otherArm.pole, floatE).applyQuaternion(stageQ)
+      solveTwoBoneIK(other.upper, other.lower, other.hand, elbow, tmp)
       if (rig.otherHand) {
         const oh = POSE.otherHand
         const of = POSE.otherFingers
-        rig.otherHand.wrist(deg(oh.bend), deg(oh.side), deg(oh.twist))
-        rig.otherHand.curl(of.curl, of.thumb, of.extra)
+        const foh = fl.otherHand
+        const fof = fl.otherFingers
+        const mix = (a: number, b: number) => lerp(a, b, floatE)
+        rig.otherHand.wrist(deg(mix(oh.bend, foh.bend)), deg(mix(oh.side, foh.side)), deg(mix(oh.twist, foh.twist)))
+        rig.otherHand.curl(
+          [mix(of.curl[0], fof.curl[0]), mix(of.curl[1], fof.curl[1]), mix(of.curl[2], fof.curl[2])],
+          mix(of.thumb, fof.thumb),
+          [mix(of.extra[0], fof.extra[0]), mix(of.extra[1], fof.extra[1]), mix(of.extra[2], fof.extra[2]), mix(of.extra[3], fof.extra[3])],
+        )
       }
       arm.hand.getWorldPosition(wrist)
       arm.lower.getWorldPosition(elbow)
@@ -427,7 +453,6 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
         arm.hand.quaternion.copy(parentQ.multiply(handWorldQ))
         arm.hand.updateMatrixWorld(true)
         const f = POSE.fingers
-        const lerp = THREE.MathUtils.lerp
         const curlAt = (k: 0 | 1 | 2) => lerp(lerp(f.curl[k], fl.fingers.curl[k], floatE), DANGLE_CURL.fingers[k], armE)
         const extraAt = (k: 0 | 1 | 2 | 3) => lerp(f.extra[k], fl.fingers.extra[k], floatE) * (1 - armE)
         hand.curl(
