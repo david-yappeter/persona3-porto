@@ -19,6 +19,11 @@ export type SceneOptions = {
       backdrop, silhouette or P3 colour remap */
   backdrop: boolean
   hiddenMaterials?: RegExp
+  /** the character's white parts (skin, shirt): the only ones outlined
+      when POSE.overlay.outline is 'bright' */
+  brightMaterials?: RegExp
+  /** kept out of POSE.shading (e.g. the face) */
+  unshadedMaterials?: RegExp
   originalMaterials?: boolean
   /** P3 menu duotone remap on the character; defaults to on with the backdrop */
   menuColors?: boolean
@@ -90,7 +95,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   /* frames are composed from several passes, cleared once by hand */
   renderer.autoClear = false
   effect.autoClear = false
-  const grade = createGrade(options.menuColors ?? options.backdrop)
+  const grade = createGrade(options.menuColors ?? options.backdrop, options.unshadedMaterials)
   grade.setHeight(renderer.domElement.height)
   const anisotropy = renderer.capabilities.getMaxAnisotropy()
 
@@ -119,6 +124,8 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
      floats alone and the hold-then-drop happens with the character there */
   let ready = false
   let readyAt = 0
+  const outlined: { material: THREE.Material; bright: boolean }[] = []
+  const shadeLight = new THREE.Vector3()
   let disposed = false
   void loadCharacter(options.modelSrc, {
     gradientMap: gradient,
@@ -134,6 +141,18 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     if (loaded) {
       rig = loaded
       stage.add(rig.root)
+      /* every character material that may get an outline (not ones the
+         loader opted out, e.g. a model's own outline shells) */
+      const seen = new Set<THREE.Material>()
+      rig.root.traverse((o) => {
+        const mesh = o as THREE.Mesh
+        if (!mesh.isMesh) return
+        for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+          if (seen.has(material) || material.userData.outlineParameters?.visible === false) continue
+          seen.add(material)
+          outlined.push({ material, bright: !!options.brightMaterials?.test(material.name) })
+        }
+      })
       if (rig.cardHand) dangleR.copy(handRotation(rig.cardHand.restF, rig.cardHand.restN, DANGLE_HAND))
     }
     ready = true
@@ -354,7 +373,11 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     elapsed += dt
 
     grade.setOverlay(POSE.overlay)
-    effect.enabled = POSE.overlay.outline
+    const ov = POSE.overlay
+    effect.enabled = ov.outline !== 'off'
+    for (const { material, bright } of outlined) {
+      material.userData.outlineParameters = { visible: ov.outline === 'all' || bright, thickness: ov.outlineWidth }
+    }
     const cam = POSE.camera
     pointerSmooth.lerp(LAB.noParallax ? tmp2.set(0, 0) : pointer, 1 - Math.exp(-4 * dt))
     camera.position.set(
@@ -368,6 +391,9 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
       camera.fov = cam.fov
       camera.updateProjectionMatrix()
     }
+    /* the grade's shading light lives in camera space */
+    camera.updateMatrixWorld()
+    grade.setShading(POSE.shading, shadeLight.copy(POSE.shading.light).transformDirection(camera.matrixWorldInverse))
     background?.update(dt)
 
     const releaseAllowed = !gateRelease || (ready && elapsed - readyAt > HOLD_AFTER_READY)

@@ -2,6 +2,8 @@ import * as THREE from 'three'
 
 const v3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
 
+export type OutlineMode = 'off' | 'bright' | 'all'
+
 /** Every hand-tuned number of the framing and held pose, in one mutable
     object. The scene reads it each frame, so the dev pose lab
     (`/skill/0?lab`) can edit it live and copy it out as JSON.
@@ -100,9 +102,27 @@ export const POSE = {
     softness: 0.35,
     /* keep dark hair solid instead of fading it with the jacket */
     hairSolid: true,
-    /* the black ink line around the character (off blends it into the
-       page; the card never has one) */
-    outline: false,
+    /* the dark ink line around the character: 'off' blends it into the
+       page, 'bright' draws it only around the white parts (skin, shirt —
+       the scene's brightMaterials), 'all' around everything. The card
+       never has one. */
+    outline: 'bright' as OutlineMode,
+    /* line thickness (0.0045 = the old full outline) */
+    outlineWidth: 0.0005,
+  },
+  /* extra shading on the white parts (skin, shirt, hands), which the
+     colour grade otherwise blows out flat. Darkens only, never adds
+     see-through. */
+  shading: {
+    /* 0 = off, 1 = the side away from the light goes fully dark */
+    strength: 0.11,
+    /* 0 = smooth, 2+ = hard cel steps */
+    bands: 2,
+    /* brightness (0..1) it starts from — lower reaches mid tones too */
+    from: 0.68,
+    /* direction the light comes from, world space (+X screen right,
+       +Y up, +Z toward the camera) */
+    light: v3(0.5, 0.7, 0.6),
   },
   /* second state ("floating"): the card arm lifts with the palm open toward
      the camera while the card leaves the hand and floats in front of the
@@ -150,7 +170,7 @@ export const LAB = {
   forceState: '' as '' | 'held' | 'floating',
 }
 
-type Json = number | boolean | number[] | { [key: string]: Json }
+type Json = number | boolean | string | number[] | { [key: string]: Json }
 
 const round = (n: number) => Math.round(n * 1000) / 1000
 
@@ -158,7 +178,7 @@ const toJson = (value: unknown): Json => {
   if (value instanceof THREE.Vector3) return [round(value.x), round(value.y), round(value.z)]
   if (Array.isArray(value)) return value.map(round)
   if (typeof value === 'number') return round(value)
-  if (typeof value === 'boolean') return value
+  if (typeof value === 'boolean' || typeof value === 'string') return value
   const out: { [key: string]: Json } = {}
   for (const [k, v] of Object.entries(value as object)) out[k] = toJson(v)
   return out
@@ -182,6 +202,8 @@ export const applyPose = (data: unknown, target: Record<string, unknown> = POSE)
       if (Number.isFinite(v)) target[k] = v
     } else if (typeof current === 'boolean') {
       if (typeof v === 'boolean') target[k] = v
+    } else if (typeof current === 'string') {
+      if (typeof v === 'string') target[k] = v
     } else if (current && typeof current === 'object') {
       applyPose(v, current as Record<string, unknown>)
     }

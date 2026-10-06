@@ -194,7 +194,14 @@ export const mountPoseLab = () => {
   overlay.add(POSE.overlay, 'cut', 0, 1, 0.01).name('brightness cut-off')
   overlay.add(POSE.overlay, 'softness', 0, 0.5, 0.01).name('fade softness')
   overlay.add(POSE.overlay, 'hairSolid').name('keep hair solid')
-  overlay.add(POSE.overlay, 'outline').name('black outline')
+  overlay.add(POSE.overlay, 'outline', ['off', 'bright', 'all']).name('outline (bright = white parts)')
+  overlay.add(POSE.overlay, 'outlineWidth', 0, 0.008, 0.0001).name('outline thickness')
+
+  const shading = gui.addFolder('White-part shading')
+  shading.add(POSE.shading, 'strength', 0, 1, 0.01).name('strength')
+  shading.add(POSE.shading, 'bands', 0, 5, 1).name('cel steps (0 = smooth)')
+  shading.add(POSE.shading, 'from', 0, 1, 0.01).name('from brightness')
+  vector(shading, POSE.shading.light, 'light comes from', [R(-1, 1), R(-1, 1), R(-1, 1)], WORLD_AXES, 0.05)
 
   const wind = gui.addFolder('Wind (coat / hair)')
   wind.add(POSE.wind, 'strength', 0, 25, 0.5).name('strength (°)')

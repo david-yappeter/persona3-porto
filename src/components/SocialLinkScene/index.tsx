@@ -20,6 +20,11 @@ type SocialLinkSceneProps = {
   backdrop?: boolean
   /** hide meshes whose material name matches (props, helper geometry) */
   hiddenMaterials?: RegExp
+  /** material names of the white parts (skin, shirt) — the only ones
+      outlined in POSE.overlay.outline 'bright' mode */
+  brightMaterials?: RegExp
+  /** material names kept out of the white-part shading (POSE.shading) */
+  unshadedMaterials?: RegExp
   /** keep a non-VRM model's own materials instead of toon-converting them */
   originalMaterials?: boolean
   /** recolour the character into the P3 menu duotone (violet > blue > cyan >
@@ -40,6 +45,8 @@ export const SocialLinkScene = ({
   boneNames,
   backdrop = true,
   hiddenMaterials,
+  brightMaterials,
+  unshadedMaterials,
   originalMaterials = false,
   menuColors,
 }: SocialLinkSceneProps) => {
@@ -60,6 +67,8 @@ export const SocialLinkScene = ({
       initialCardState: latest.current.cardState,
       backdrop,
       hiddenMaterials,
+      brightMaterials,
+      unshadedMaterials,
       originalMaterials,
       menuColors,
     })
@@ -70,7 +79,7 @@ export const SocialLinkScene = ({
       controllerRef.current = null
     }
     /* keyed by content — boneNames is usually an inline object literal */
-  }, [modelSrc, JSON.stringify(boneNames ?? {}), backdrop, hiddenMaterials?.source, originalMaterials, menuColors])
+  }, [modelSrc, JSON.stringify(boneNames ?? {}), backdrop, hiddenMaterials?.source, brightMaterials?.source, unshadedMaterials?.source, originalMaterials, menuColors])
 
   const { image, imageFit, title, subtitle, numeral } = card
   useEffect(() => {

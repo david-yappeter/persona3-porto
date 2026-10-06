@@ -11,6 +11,10 @@ const MAKOTO_MODEL = `${import.meta.env.BASE_URL}assets/models/makoto/scene.gltf
 /* props and helper geometry bundled with the Sketchfab rip: katana, gun
    holster, evoker, and tiny marker quads parked on the knee/elbow joints */
 const MAKOTO_HIDDEN = /^(175_|katana|c0744_gunholder|c0744_syoukanki)/
+/* the white parts — face/neck skin, hands, shirt — outlined in 'bright' mode */
+const MAKOTO_BRIGHT = /^c0744_(face_skin|face_kubi|body_kubi|body_hand|body_syatu)/
+/* the head (face skin, eyes, the face mesh's neck) stays out of the shading */
+const MAKOTO_UNSHADED = /^c0744_face_/
 
 const ROMAN: [number, string][] = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]
 /* arcana numbering starts at 0 (The Fool) */
@@ -88,6 +92,8 @@ export const SkillLayout = () => {
         modelSrc={MAKOTO_MODEL}
         backdrop={false}
         hiddenMaterials={MAKOTO_HIDDEN}
+        brightMaterials={MAKOTO_BRIGHT}
+        unshadedMaterials={MAKOTO_UNSHADED}
         originalMaterials
         menuColors
       />
