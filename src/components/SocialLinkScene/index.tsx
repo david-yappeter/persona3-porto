@@ -20,6 +20,8 @@ type SocialLinkSceneProps = {
   backdrop?: boolean
   /** hide meshes whose material name matches (props, helper geometry) */
   hiddenMaterials?: RegExp
+  /** hidden too, but still counted when the model is sized (see LoadOptions) */
+  undrawnMaterials?: RegExp
   /** material names of the white parts (skin, shirt) — the only ones
       outlined in POSE.overlay.outline 'bright' mode */
   brightMaterials?: RegExp
@@ -50,6 +52,7 @@ export const SocialLinkScene = ({
   boneNames,
   backdrop = true,
   hiddenMaterials,
+  undrawnMaterials,
   brightMaterials,
   unshadedMaterials,
   originalMaterials = false,
@@ -74,6 +77,7 @@ export const SocialLinkScene = ({
       initialCardState: latest.current.cardState,
       backdrop,
       hiddenMaterials,
+      undrawnMaterials,
       brightMaterials,
       unshadedMaterials,
       originalMaterials,
@@ -88,7 +92,7 @@ export const SocialLinkScene = ({
       controllerRef.current = null
     }
     /* keyed by content — boneNames is usually an inline object literal */
-  }, [modelSrc, JSON.stringify(boneNames ?? {}), backdrop, hiddenMaterials?.source, brightMaterials?.source, unshadedMaterials?.source, originalMaterials, menuColors, borrowTextures?.map((b) => `${b.to.source}<${b.from.source}`).join()])
+  }, [modelSrc, JSON.stringify(boneNames ?? {}), backdrop, hiddenMaterials?.source, undrawnMaterials?.source, brightMaterials?.source, unshadedMaterials?.source, originalMaterials, menuColors, borrowTextures?.map((b) => `${b.to.source}<${b.from.source}`).join()])
 
   const { image, imageFit, title, subtitle, numeral } = card
   useEffect(() => {

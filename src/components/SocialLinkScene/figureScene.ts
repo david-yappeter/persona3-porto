@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js'
 import { loadCharacter, type ArmChain, type CharacterRig, type HandRig, type TextureBorrow } from './character'
+import { createBand, writeBandStencil } from './band'
+import { createScreenText } from './screenText'
 import { FIGURE, FIGURE_LAB } from './figure'
 import { solveTwoBoneIK } from './ik'
 import { POSE } from './pose'
@@ -15,9 +17,15 @@ import { stageScale } from '../../utils/stage'
 export type FigureSceneOptions = {
   modelSrc: string
   hiddenMaterials?: RegExp
+  undrawnMaterials?: RegExp
   brightMaterials?: RegExp
   unshadedMaterials?: RegExp
   borrowTextures?: TextureBorrow[]
+  /** the big white band behind him (FIGURE.band), cut out wherever he's
+      drawn and catching his shadow (FIGURE.shadow) */
+  band?: boolean
+  /** band only: huge menu-name type on the band, behind him (FIGURE.title) */
+  title?: string
 }
 
 const deg = THREE.MathUtils.degToRad
@@ -28,16 +36,35 @@ type Wrist = { bend: number; side: number; twist: number }
 type Fingers = { curl: [number, number, number]; thumb: number; extra: [number, number, number, number] }
 type Leg = { lift: number; spread: number; twist: number; knee: number }
 
+/* last frame of a scene that just unmounted, shown by the next mount until
+   its model loads — a route transition re-renders the outgoing page as a
+   ghost copy, which would otherwise pop in empty (same as scene.ts) */
+let handoff: { frame: HTMLCanvasElement; at: number } | null = null
+const HANDOFF_TTL = 1000
+
 export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions) => {
   const width = Math.max(mount.clientWidth, 1)
   const height = Math.max(mount.clientHeight, 1)
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+  /* stencil: the band is cut out wherever he drew */
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, stencil: true })
   renderer.setClearColor(0x000000, 0)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio * stageScale(), 2))
   renderer.setSize(width, height)
   mount.appendChild(renderer.domElement)
+  const taken = handoff && performance.now() - handoff.at < HANDOFF_TTL ? handoff : null
+  handoff = null
+  if (taken) {
+    taken.frame.className = 'social-link-scene-handoff'
+    mount.appendChild(taken.frame)
+  }
+  const band = options.band ? createBand(true) : null
+  const title = band && options.title ? createScreenText(options.title) : null
+  const drawTitle = () => title?.render(renderer, FIGURE.title)
   const effect = new OutlineEffect(renderer, { defaultThickness: 0.0045, defaultColor: PALETTE.outline })
+  /* frames are composed from two passes (him, then the band), cleared once by hand */
+  renderer.autoClear = false
+  effect.autoClear = false
   const grade = createGrade(true, options.unshadedMaterials)
   grade.setHeight(renderer.domElement.height)
 
@@ -63,10 +90,12 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
   let rig: CharacterRig | null = null
   const outlined: { material: THREE.Material; bright: boolean }[] = []
   let disposed = false
+  let ready = false
   void loadCharacter(options.modelSrc, {
     gradientMap: gradient,
     grade,
     hiddenMaterials: options.hiddenMaterials,
+    undrawnMaterials: options.undrawnMaterials,
     originalMaterials: true,
     borrowTextures: options.borrowTextures,
   }).then((loaded) => {
@@ -74,6 +103,8 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
       loaded?.dispose()
       return
     }
+    ready = true
+    taken?.frame.remove()
     if (!loaded) return
     rig = loaded
     feet.add(rig.root)
@@ -82,6 +113,7 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
       const mesh = o as THREE.Mesh
       if (!mesh.isMesh) return
       for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        if (band) writeBandStencil(material)
         if (seen.has(material) || material.userData.outlineParameters?.visible === false) continue
         seen.add(material)
         outlined.push({ material, bright: !!options.brightMaterials?.test(material.name) })
@@ -225,8 +257,14 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
       rig.postUpdate(motionDt, motion)
     }
 
+    band?.update(dt, FIGURE.band)
+    renderFrame()
+  }
+  const renderFrame = () => {
     renderer.clear()
     effect.render(scene, camera)
+    /* not before he's there to cut his hole */
+    if (ready) band?.render(renderer, scene, camera, FIGURE.shadow, drawTitle)
   }
   renderer.setAnimationLoop(tick)
 
@@ -244,7 +282,23 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
   return () => {
     disposed = true
     renderer.setAnimationLoop(null)
+    if (ready) {
+      /* copied in the same task as the render, while the drawing buffer
+         still holds it */
+      renderFrame()
+      const frame = document.createElement('canvas')
+      frame.width = renderer.domElement.width
+      frame.height = renderer.domElement.height
+      frame.getContext('2d')?.drawImage(renderer.domElement, 0, 0)
+      handoff = { frame, at: performance.now() }
+    } else if (taken) {
+      /* unmounted before loading (StrictMode's dev double mount) */
+      taken.frame.remove()
+      handoff = taken
+    }
     resize.disconnect()
+    band?.dispose()
+    title?.dispose()
     rig?.dispose()
     gradient.dispose()
     renderer.dispose()

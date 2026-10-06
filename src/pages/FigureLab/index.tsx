@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { MenuBackground } from '../../components/MenuBackground'
 import { mountFigureLab } from '../../components/SocialLinkScene/figureLab'
 import { mountFigureScene } from '../../components/SocialLinkScene/figureScene'
-import { MAKOTO_BRIGHT, MAKOTO_HIDDEN, MAKOTO_MODEL, MAKOTO_TEXTURES, MAKOTO_UNSHADED } from '../../data/makoto'
+import { MAKOTO_BRIGHT, MAKOTO_HIDDEN, MAKOTO_MODEL, MAKOTO_TEXTURES, MAKOTO_UNDRAWN, MAKOTO_UNSHADED } from '../../data/makoto'
 import '../../components/SocialLinkScene/SocialLinkScene.css'
 
 const OCEAN_BG = `${import.meta.env.BASE_URL}assets/persona_3_menu_bg_ocean_seamless.mp4`
@@ -19,6 +19,7 @@ export const FigureLab = () => {
     const disposeScene = mountFigureScene(mount, {
       modelSrc: MAKOTO_MODEL,
       hiddenMaterials: MAKOTO_HIDDEN,
+      undrawnMaterials: MAKOTO_UNDRAWN,
       brightMaterials: MAKOTO_BRIGHT,
       unshadedMaterials: MAKOTO_UNSHADED,
       borrowTextures: MAKOTO_TEXTURES,

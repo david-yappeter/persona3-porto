@@ -2,7 +2,7 @@ import { DEFAULT_FIGURE, FIGURE, FIGURE_LAB } from './figure'
 import { R, WORLD_AXES, createLabPanel, freeArm, look, vector, type Range } from './labGui'
 import type { AccessoryMotion } from './wind'
 
-/* dev-only slider panel for the figure lab (`/figure-lab`): the character
+/* dev-only slider panel for the figure lab (`/figure-lab`, `/credits?lab`): the character
    alone, every FIGURE value live; saved in localStorage, "Copy config"
    puts it on the clipboard as JSON */
 
@@ -87,6 +87,24 @@ export const mountFigureLab = () => {
     folder.add(strand, 'sweep', -90, 90, 0.5).name('sweep (° + his left)')
     folder.add(strand, 'wind', 0, 3, 0.05).name('wind amount')
   }
+
+  const band = gui.addFolder('White band (/credits)').close()
+  band.add(FIGURE.band, 'width', 0, 2, 0.005).name('width')
+  band.add(FIGURE.band, 'bottom', -0.5, 2.5, 0.005).name('lower edge at bottom (x)')
+  band.add(FIGURE.band, 'lean', -2, 2, 0.01).name('slant')
+  const title = band.addFolder('page name on it')
+  title.add(FIGURE.title, 'x', -0.5, 1, 0.005).name('left edge (x)')
+  title.add(FIGURE.title, 'y', 0, 1.5, 0.005).name('baseline (y from top)')
+  title.add(FIGURE.title, 'size', 0.05, 1, 0.005).name('size (× screen height)')
+  title.add(FIGURE.title, 'squeeze', 0.4, 1.5, 0.01).name('width squeeze')
+  title.add(FIGURE.title, 'spacing', -20, 60, 0.5).name('letter gap (px)')
+  title.add(FIGURE.title, 'slant', -30, 40, 0.5).name('italic lean (°)')
+  title.addColor(FIGURE.title, 'color').name('colour')
+  const shadow = band.addFolder('his shadow on it')
+  shadow.add(FIGURE.shadow, 'strength', 0, 1, 0.01).name('strength')
+  shadow.addColor(FIGURE.shadow, 'color').name('colour')
+  shadow.add(FIGURE.shadow, 'x', -0.3, 0.3, 0.002).name('offset x (+ right)')
+  shadow.add(FIGURE.shadow, 'y', -0.3, 0.3, 0.002).name('offset y (+ down)')
 
   const accessories = gui.addFolder('Ribbon / cord / earphone movement')
   const accessory = (name: string, a: AccessoryMotion) => {

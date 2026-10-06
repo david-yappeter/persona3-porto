@@ -69,6 +69,9 @@ export type LoadOptions = {
   boneNames?: BoneNameOverrides
   /** meshes with a material whose name matches are hidden (props, helpers) */
   hiddenMaterials?: RegExp
+  /** like hiddenMaterials, but still counted when the model is sized and
+      placed — for a part dropped after the framing was tuned around it */
+  undrawnMaterials?: RegExp
   /** non-VRM only: keep the file's own materials instead of toon-converting */
   originalMaterials?: boolean
   /** non-VRM only: materials matching `to` take the base texture of the
@@ -543,6 +546,13 @@ export const loadCharacter = async (url: string, options: LoadOptions): Promise<
     const center = box.getCenter(new THREE.Vector3())
     root.scale.setScalar(scale)
     root.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale)
+    const undrawn = options.undrawnMaterials
+    if (undrawn) {
+      facing.traverse((o) => {
+        const material = (o as THREE.Mesh).material
+        if (material && (Array.isArray(material) ? material : [material]).some((m) => undrawn.test(m.name))) o.visible = false
+      })
+    }
 
     const mixer = !vrm && gltf.animations.length ? new THREE.AnimationMixer(model) : null
     if (mixer) mixer.clipAction(gltf.animations[0]).play()

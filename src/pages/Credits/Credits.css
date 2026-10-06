@@ -1,0 +1,13 @@
+/* the list down the left, like the equip menu's party column; above
+   MenuBackground's absolute layers, which would otherwise paint over it */
+.credits-list {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  padding: 2rem;
+  padding-top: 7rem;
+}
+
+.credits-list .basic-row {
+  max-width: 640px;
+}

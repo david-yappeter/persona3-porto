@@ -4,7 +4,8 @@ import { poseToJson } from './pose'
 const v3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
 
 /** The character alone (no card, no band) for the figure lab
-    (`/figure-lab`, dev only): whole-body orientation, floating, gravity on
+    (`/figure-lab` and the /credits background, lab via `/credits?lab` in
+    dev): whole-body orientation, floating, gravity on
     the hair and cloth, both arms, the face and the ribbon/cord. Mutable like
     POSE — the lab edits it live and copies it out as JSON. The look (colour
     grade, outline, shading) is shared with POSE. Angles are degrees,
@@ -119,9 +120,46 @@ export const FIGURE = {
      their own (degrees per segment, swings per second) and how much
      gravity pulls them */
   accessories: {
-    ribbon: { amount: 2.05, swing: 6, speed: 0.6, gravity: 2 },
-    cord: { amount: 3, swing: 20, speed: 0.5, gravity: 2 },
-    earphone: { amount: 1, swing: 3, speed: 0.5, gravity: 1.05 },
+    /* gravity 0: with this pose's pull pointing off his chest they'd lift
+       away from it and dangle in the air */
+    ribbon: { amount: 2.05, swing: 6, speed: 0.6, gravity: 0 },
+    cord: { amount: 3, swing: 20, speed: 0.5, gravity: 0 },
+    earphone: { amount: 1, swing: 3, speed: 0.5, gravity: 0 },
+  },
+  /* the big white band behind him on /credits (screen fractions, x from the
+     left, y from the top; see POSE.band): never behind his see-through
+     parts, and it catches his shadow */
+  band: {
+    /* where its lower (right-hand) edge meets the bottom of the screen */
+    bottom: 1.15,
+    /* horizontal distance between its two edges */
+    width: 1.23,
+    /* how far right the edges move per screen height going up */
+    lean: 0.55,
+  },
+  /* his flat silhouette on the band, offset like a drop shadow (see POSE.shadow) */
+  shadow: {
+    strength: 0.66,
+    color: '#747781',
+    /* screen fractions: x + = right, y + = down */
+    x: 0.02,
+    y: -0.02,
+  },
+  /* the huge grey page name on the band (/credits' "CREDITS", like the
+     equip menu's "EQUIP"), behind him and under his shadow */
+  title: {
+    /* left edge and baseline, screen fractions (x from the left, y from the top) */
+    x: 0.06,
+    y: 0.975,
+    /* font size, fraction of the screen height */
+    size: 0.3,
+    /* 1 = as drawn, < 1 = condensed */
+    squeeze: 0.72,
+    /* gap between letters, CSS px */
+    spacing: 5,
+    /* italic lean, degrees */
+    slant: 12,
+    color: '#a9a9ad',
   },
   /* hair strands styled on top of their modelled shape, in face space
      (follows the head), degrees spread over each strand: lift + = away

@@ -24,6 +24,7 @@ export const router = createBrowserRouter(
             },
           ],
         },
+        { path: 'credits', lazy: () => import('./pages/Credits').then((m) => ({ Component: m.Credits })) },
         /* dev-only figure lab: the character alone with a slider panel */
         ...(import.meta.env.DEV
           ? [{ path: 'figure-lab', lazy: () => import('./pages/FigureLab').then((m) => ({ Component: m.FigureLab })) }]

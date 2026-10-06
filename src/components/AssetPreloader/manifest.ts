@@ -65,4 +65,5 @@ export const PRELOAD_MANIFEST: PreloadAsset[] = [
   /* the same chunks router.tsx lazy-loads; weights ≈ their gzipped size */
   { kind: 'module', load: () => import('../../pages/SkillLayout'), weight: 240_000 },
   { kind: 'module', load: () => import('../../pages/SkillDetail'), weight: 5_000 },
+  { kind: 'module', load: () => import('../../pages/Credits'), weight: 20_000 },
 ]

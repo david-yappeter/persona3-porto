@@ -145,11 +145,15 @@ export const buildWind = (model: THREE.Object3D, root: THREE.Object3D = model) =
        evenly over each chain's segments (they add up toward the tip) */
     const g = motion.gravity
     let pullAngle = 0
+    /* the most a chain can turn: all the way round to hang along the pull,
+       never past it, however strong */
+    let fullAngle = 0
     if (g && g.strength !== 0 && g.direction.lengthSq() > 1e-8) {
       restDown.set(0, -1, 0).applyQuaternion(body)
       pull.crossVectors(restDown, tmp.copy(g.direction).normalize())
       const sin = pull.length()
-      pullAngle = Math.atan2(sin, restDown.dot(tmp)) * g.strength
+      fullAngle = Math.atan2(sin, restDown.dot(tmp))
+      pullAngle = fullAngle * g.strength
       if (sin > 1e-6) pull.divideScalar(sin)
       else pullAngle = 0
     }
@@ -159,7 +163,7 @@ export const buildWind = (model: THREE.Object3D, root: THREE.Object3D = model) =
       const style = chain.strand ? motion.hair?.[chain.strand] : undefined
       const amount =
         chain.group === 'coat' ? w.coat : chain.group === 'hair' ? w.hair * (style?.wind ?? 1) : (acc?.amount ?? w.accessories ?? 0)
-      const gravity = pullAngle * (acc?.gravity ?? 1)
+      const gravity = THREE.MathUtils.clamp(pullAngle * (acc?.gravity ?? 1), -fullAngle, fullAngle)
       const swing = acc ? deg(acc.swing) : 0
       const n = chain.bones.length
       chain.bones[0].getWorldPosition(out).sub(hub).setY(0)

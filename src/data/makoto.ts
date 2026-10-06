@@ -5,6 +5,11 @@ export const MAKOTO_MODEL = `${import.meta.env.BASE_URL}assets/models/makoto/sce
 /* props and helper geometry bundled with the Sketchfab rip: katana, gun
    holster, evoker, and tiny marker quads parked on the knee/elbow joints */
 export const MAKOTO_HIDDEN = /^(175_|katana|c0744_gunholder|c0744_syoukanki)/
+/* the katana's sword-swing effect plane ("01 - Default"): fully transparent,
+   but it still cut a hole in the white bands and cast a shadow on them.
+   Not drawn, but still counted in the model's sizing — every camera
+   framing was tuned with it there */
+export const MAKOTO_UNDRAWN = /^01_-_Default/
 /* the white parts — face/neck skin, hands, shirt — outlined in 'bright' mode */
 export const MAKOTO_BRIGHT = /^c0744_(face_skin|face_kubi|body_kubi|body_hand|body_syatu)/
 /* the head (face skin, eyes, the face mesh's neck) stays out of the shading */

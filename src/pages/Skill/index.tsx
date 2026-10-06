@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router'
-import { SkillRow } from '../../components/SkillRow'
+import { BasicRow } from '../../components/BasicRow'
 import { EXPERIENCE } from '../../data/experience'
 import { useMenuNavigation } from '../../hooks/MenuNavigation'
 import { useSkillContext } from '../SkillLayout'
@@ -42,27 +42,18 @@ export const Skill = () => {
           un-z-indexed absolute layers, which would otherwise paint over it */}
       <div style={{ position: 'relative', zIndex: 1, height: '100%', padding: '2rem', paddingTop: '7rem' }}>
         {EXPERIENCE.map((exp, i) => (
-          <SkillRow
+          <BasicRow
             key={exp.company}
-            {...exp}
+            imageSrc={exp.headSrc}
+            title={exp.title}
+            subtitle={exp.company}
+            aside={exp.period}
+            tag={exp.current ? 'Current' : undefined}
             selected={i === selected}
             onSelect={() => moveTo(i)}
             onActivate={() => void navigate(`/careers/${i}`)}
           />
         ))}
-        <button
-          style={{
-            marginTop: '2rem',
-            fontSize: '2rem',
-            color: '#fff',
-            background: 'none',
-            border: '1px solid #fff',
-            padding: '1em 2em',
-          }}
-          onClick={() => void navigate('/')}
-        >
-          SKILL PAGE — back
-        </button>
       </div>
     </>
   )

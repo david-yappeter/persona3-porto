@@ -1,32 +1,32 @@
-.skill-row {
+.basic-row {
   cursor: pointer;
-  /* the black bar is painted here and cut to shape by --skill-row-shape;
+  /* the black bar is painted here and cut to shape by --basic-row-shape;
      head_row_*_colored.png rides on top of it as the band + head silhouette */
-  --skill-row-h: 70px;
+  --basic-row-h: 70px;
   /* the bar's right cut, measured off the PNGs: both asset families put it at
      99.7% of the width along the top edge and 95.5% along the bottom */
-  --skill-row-cut-top: 99.7%;
-  --skill-row-cut-bottom: 95.5%;
-  --skill-row-border: 3px;
+  --basic-row-cut-top: 99.7%;
+  --basic-row-cut-bottom: 95.5%;
+  --basic-row-border: 3px;
   /* the bar outline itself — reused verbatim as the outer ring of .is-selected's
      border so the black bar and the red cursor share one silhouette */
-  --skill-row-shape: polygon(
+  --basic-row-shape: polygon(
     0 0,
-    var(--skill-row-cut-top) 0,
-    var(--skill-row-cut-bottom) 100%,
+    var(--basic-row-cut-top) 0,
+    var(--basic-row-cut-bottom) 100%,
     0 100%
   );
 
   position: relative;
   width: 100%;
   max-width: 700px;
-  height: var(--skill-row-h);
-  margin-bottom: calc(var(--skill-row-h) * 0.08);
+  height: var(--basic-row-h);
+  margin-bottom: calc(var(--basic-row-h) * 0.08);
   background: #000000;
-  clip-path: var(--skill-row-shape);
+  clip-path: var(--basic-row-shape);
 }
 
-.skill-row-bg {
+.basic-row-bg {
   position: absolute;
   inset: 0;
   left: -17%;
@@ -39,7 +39,7 @@
   z-index: 2;
 }
 
-.skill-row-content {
+.basic-row-content {
   position: absolute;
   inset: 0;
   z-index: 3;
@@ -47,12 +47,12 @@
   align-items: center;
   gap: 2%;
   padding-right: 6%;
-  font-size: calc(var(--skill-row-h) * 0.6);
+  font-size: calc(var(--basic-row-h) * 0.6);
   line-height: 1;
   color: #fff;
 }
 
-.skill-row-title-group {
+.basic-row-title-group {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -61,7 +61,7 @@
   min-width: 0;
 }
 
-.skill-row-name {
+.basic-row-name {
   font-family: 'Eurostile Extended', 'Arial Narrow', sans-serif;
   font-weight: 900;
   font-style: normal;
@@ -72,7 +72,7 @@
   max-width: 100%;
 }
 
-.skill-row-company {
+.basic-row-subtitle {
   font-family: Arial, Helvetica, sans-serif;
   font-weight: 400;
   font-style: normal;
@@ -84,8 +84,9 @@
   max-width: 100%;
 }
 
-/* fixed-width cell so the dates line up column-wise down the whole list */
-.skill-row-period {
+/* fixed-width cell so the right-hand text (dates, licences) lines up
+   column-wise down the whole list */
+.basic-row-aside {
   flex: 0 0 28%;
   text-align: right;
   white-space: nowrap;
@@ -101,7 +102,7 @@
    seams back to the origin, then retraces it inset by the border width
    counter-clockwise — the nonzero fill rule cancels the interior and leaves
    the outline, and the seam has zero width so it never shows */
-.skill-row.is-selected::after {
+.basic-row.is-selected::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -110,22 +111,22 @@
   background: #e3123b;
   clip-path: polygon(
     0 0,
-    var(--skill-row-cut-top) 0,
-    var(--skill-row-cut-bottom) 100%,
+    var(--basic-row-cut-top) 0,
+    var(--basic-row-cut-bottom) 100%,
     0 100%,
     0 0,
-    var(--skill-row-border) var(--skill-row-border),
-    var(--skill-row-border) calc(100% - var(--skill-row-border)),
-    calc(var(--skill-row-cut-bottom) - var(--skill-row-border)) calc(100% - var(--skill-row-border)),
-    calc(var(--skill-row-cut-top) - var(--skill-row-border)) var(--skill-row-border),
-    var(--skill-row-border) var(--skill-row-border)
+    var(--basic-row-border) var(--basic-row-border),
+    var(--basic-row-border) calc(100% - var(--basic-row-border)),
+    calc(var(--basic-row-cut-bottom) - var(--basic-row-border)) calc(100% - var(--basic-row-border)),
+    calc(var(--basic-row-cut-top) - var(--basic-row-border)) var(--basic-row-border),
+    var(--basic-row-border) var(--basic-row-border)
   );
 }
 
-/* vertical ribbon along the left edge, over the portrait — shows "Current"
-   on the job in progress. z-index 1 keeps it under the artwork so the head
+/* vertical ribbon along the left edge, over the portrait — "Current" on the
+   job in progress, a category on the credits. z-index 1 keeps it under the artwork so the head
    clips into the word, the way the source UI does */
-.skill-row-tag {
+.basic-row-tag {
   position: absolute;
   top: 50%;
   left: 7%;
@@ -133,7 +134,7 @@
   transform: translate(-50%, -50%) rotate(-33deg) scaleX(0.55);
   font-family: 'Eurostile Extended', 'Arial Narrow', sans-serif;
   font-weight: 800;
-  font-size: calc(var(--skill-row-h) * 0.34);
+  font-size: calc(var(--basic-row-h) * 0.34);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;

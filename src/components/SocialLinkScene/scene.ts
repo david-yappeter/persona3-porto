@@ -21,6 +21,7 @@ export type SceneOptions = {
       backdrop, silhouette or P3 colour remap */
   backdrop: boolean
   hiddenMaterials?: RegExp
+  undrawnMaterials?: RegExp
   /** the character's white parts (skin, shirt): the only ones outlined
       when POSE.overlay.outline is 'bright' */
   brightMaterials?: RegExp
@@ -153,6 +154,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     grade,
     boneNames: options.boneNames,
     hiddenMaterials: options.hiddenMaterials,
+    undrawnMaterials: options.undrawnMaterials,
     originalMaterials: options.originalMaterials,
     borrowTextures: options.borrowTextures,
   }).then((loaded) => {

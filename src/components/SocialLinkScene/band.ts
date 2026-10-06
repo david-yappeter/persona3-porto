@@ -166,10 +166,12 @@ export const createBand = (initiallyShown: boolean) => {
       uniforms.uOffset.value.set((1 - e) * SLIDE * 2, (1 - e) * SLIDE * 2)
     },
     /** call after the scene has drawn (and written the stencil); the
-        shadow redraws `world` from `view` */
-    render: (renderer: THREE.WebGLRenderer, world: THREE.Scene, view: THREE.Camera, shadow: BandShadow) => {
+        shadow redraws `world` from `view`. `decorate` draws on top of the
+        band before the shadow falls on both (see screenText.ts) */
+    render: (renderer: THREE.WebGLRenderer, world: THREE.Scene, view: THREE.Camera, shadow: BandShadow, decorate?: () => void) => {
       if (t <= 0) return
       renderer.render(scene, camera)
+      decorate?.()
       renderShadow(renderer, world, view, shadow, uniforms.uOpacity.value)
     },
     dispose: () => {
