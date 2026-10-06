@@ -27,6 +27,7 @@ async function fetchToCache(url: string, onBytes: (loaded: number) => void) {
 
 async function contentLengthOf(asset: PreloadAsset): Promise<number> {
   if (asset.kind === 'font') return FONT_WEIGHT
+  if (asset.kind === 'module') return asset.weight
   try {
     const res = await fetch(asset.url, { method: 'HEAD' })
     return Number(res.headers.get('content-length')) || 0
@@ -46,6 +47,7 @@ function makeProgressSetter(loaded: number[], i: number, report: () => void) {
 async function loadOne(asset: PreloadAsset, onProgress: (loaded: number) => void, total: number) {
   try {
     if (asset.kind === 'font') await loadFont()
+    else if (asset.kind === 'module') await asset.load()
     else await fetchToCache(asset.url, onProgress)
   } catch {
     // a broken asset shouldn't hang the loading screen forever
