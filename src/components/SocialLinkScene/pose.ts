@@ -11,7 +11,7 @@ export const POSE = {
   camera: {
     /* world space: +X screen right, +Y up, +Z toward the camera */
     pos: v3(-0.065, 1.5, 0.86),
-    target: v3(0.05, 1.3, -0.025),
+    target: v3(0.09, 1.3, -0.025),
     /* dutch tilt — the source frame leans with the head to the right */
     roll: 11.46,
     fov: 28,

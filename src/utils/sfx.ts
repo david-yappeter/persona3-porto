@@ -6,9 +6,9 @@ const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`
 export const SFX = {
   slideUp: asset('sound/deck_ui_slider_up.wav'),
   slideDown: asset('sound/deck_ui_slider_down.wav'),
-  flyIn: asset('sound/deck_ui_side_menu_fly_in.wav'),
+  start: asset('sound/deck_ui_into_game_detail.wav'),
+  activate: asset('sound/deck_ui_default_activation.wav'),
   flyOut: asset('sound/deck_ui_side_menu_fly_out.wav'),
-  intoDetail: asset('sound/deck_ui_into_game_detail.wav'),
   outOfDetail: asset('sound/deck_ui_out_of_game_detail.wav'),
   switchEntry: asset('sound/deck_ui_volume.wav'),
 } as const

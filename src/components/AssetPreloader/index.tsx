@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
+import { playSfx, preloadSfx } from '../../utils/sfx'
 import { PRELOAD_MANIFEST } from './manifest'
 import { usePreloadAssets } from './usePreloadAssets'
 import './AssetPreloader.css'
@@ -22,7 +23,13 @@ export const AssetPreloader = ({ children }: AssetPreloaderProps) => {
 
   useEffect(() => {
     if (!done || started) return
-    const onGesture = () => setStarted(true)
+    /* decode the cues now (a suspended context still decodes) so the start
+       cue below isn't dropped as late on the first gesture */
+    preloadSfx()
+    const onGesture = () => {
+      playSfx('start')
+      setStarted(true)
+    }
     window.addEventListener('pointerdown', onGesture)
     window.addEventListener('keydown', onGesture)
     return () => {
