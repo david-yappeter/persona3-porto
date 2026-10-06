@@ -85,6 +85,13 @@ const HOLD_AFTER_READY = 0.8
 const smooth = (t: number) => t * t * (3 - 2 * t)
 const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
 
+/* last frame of a scene that just unmounted. A route transition re-renders
+   the outgoing page as a ghost copy, which mounts a fresh scene that needs
+   a moment to load its model — it shows this frame until then, so the
+   ghost looks like the page it replaced instead of popping in */
+let handoff: { frame: HTMLCanvasElement; at: number } | null = null
+const HANDOFF_TTL = 1000
+
 export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) => {
   const width = Math.max(mount.clientWidth, 1)
   const height = Math.max(mount.clientHeight, 1)
@@ -95,6 +102,12 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.setSize(width, height)
   mount.appendChild(renderer.domElement)
+  const taken = handoff && performance.now() - handoff.at < HANDOFF_TTL ? handoff : null
+  handoff = null
+  if (taken) {
+    taken.frame.className = 'social-link-scene-handoff'
+    mount.appendChild(taken.frame)
+  }
   const band = createBand(options.band ?? false)
   const bandShape: BandShape = { ...POSE.band }
   const effect = new OutlineEffect(renderer, { defaultThickness: 0.0045, defaultColor: PALETTE.outline })
@@ -163,6 +176,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     }
     ready = true
     readyAt = elapsed
+    taken?.frame.remove()
   })
 
   const card = createCardMesh(anisotropy)
@@ -700,7 +714,8 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
         if (material) (Array.isArray(material) ? material : [material]).forEach(writeBandStencil)
       })
       effect.render(scene, camera)
-      band.render(renderer)
+      /* not before the character is there to cut its hole */
+      if (ready) band.render(renderer)
       return
     }
     const sky = scene.background
@@ -753,6 +768,22 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     dispose: () => {
       disposed = true
       renderer.setAnimationLoop(null)
+      if (ready) {
+        /* copied in the same task as the render, while the drawing buffer
+           still holds it */
+        renderFrame()
+        const { width: w, height: h } = renderer.domElement
+        const frame = document.createElement('canvas')
+        frame.width = w
+        frame.height = h
+        frame.getContext('2d')?.drawImage(renderer.domElement, 0, 0)
+        handoff = { frame, at: performance.now() }
+      } else if (taken) {
+        /* unmounted before loading (StrictMode's dev double mount): pass
+           the frame on to the next mount */
+        taken.frame.remove()
+        handoff = taken
+      }
       resize.disconnect()
       window.removeEventListener('pointermove', onPointer)
       rig?.dispose()

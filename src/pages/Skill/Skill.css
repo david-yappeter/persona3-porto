@@ -26,3 +26,9 @@
     transform: translate(0, 0);
   }
 }
+
+/* the copy of this page a route transition leaves behind while it plays
+   mustn't re-run the entrance */
+.route-exit-old .skill-camp-art {
+  animation: none;
+}

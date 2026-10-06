@@ -11,3 +11,11 @@
   width: 100%;
   height: 100%;
 }
+
+/* the previous scene's last frame, covering this one until its model loads */
+.social-link-scene-handoff {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
