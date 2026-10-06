@@ -30,6 +30,9 @@ type SocialLinkSceneProps = {
   /** recolour the character into the P3 menu duotone (violet > blue > cyan >
       white by brightness); defaults to on with the backdrop */
   menuColors?: boolean
+  /** no-backdrop only: the white diagonal S. Link band behind the character
+      (never behind its see-through parts); changing it slides it in/out */
+  band?: boolean
 }
 
 const DEFAULT_MODEL = `${import.meta.env.BASE_URL}assets/models/protagonist.glb`
@@ -49,13 +52,14 @@ export const SocialLinkScene = ({
   unshadedMaterials,
   originalMaterials = false,
   menuColors,
+  band = false,
 }: SocialLinkSceneProps) => {
   const mountRef = useRef<HTMLDivElement>(null)
   const controllerRef = useRef<SocialLinkSceneController | null>(null)
-  const latest = useRef({ card, cardState })
+  const latest = useRef({ card, cardState, band })
 
   useEffect(() => {
-    latest.current = { card, cardState }
+    latest.current = { card, cardState, band }
   })
 
   useEffect(() => {
@@ -71,6 +75,7 @@ export const SocialLinkScene = ({
       unshadedMaterials,
       originalMaterials,
       menuColors,
+      band: latest.current.band,
     })
     controller.setCard(latest.current.card)
     controllerRef.current = controller
@@ -89,6 +94,10 @@ export const SocialLinkScene = ({
   useEffect(() => {
     controllerRef.current?.setCardState(cardState)
   }, [cardState])
+
+  useEffect(() => {
+    controllerRef.current?.setBand(band)
+  }, [band])
 
   return <div ref={mountRef} className="social-link-scene" aria-hidden="true" />
 }

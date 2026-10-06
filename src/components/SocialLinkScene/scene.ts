@@ -5,6 +5,7 @@ import { CARD_H, CARD_W, createCardMesh, createLanyard, drawCardFace, faceKey, t
 import { loadCharacter, type ArmChain, type BoneNameOverrides, type CharacterRig } from './character'
 import { solveTwoBoneIK, swingBone } from './ik'
 import { LAB, POSE } from './pose'
+import { createBand, writeBandStencil, type BandShape } from './band'
 import { PALETTE, createGrade, createToonGradient } from './toon'
 
 /* floating = the second pose: open palm, card floating and turning in
@@ -27,6 +28,8 @@ export type SceneOptions = {
   originalMaterials?: boolean
   /** P3 menu duotone remap on the character; defaults to on with the backdrop */
   menuColors?: boolean
+  /** no-backdrop only: start with the white S. Link band shown (see band.ts) */
+  band?: boolean
 }
 
 const v3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
@@ -86,11 +89,14 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   const width = Math.max(mount.clientWidth, 1)
   const height = Math.max(mount.clientHeight, 1)
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: !options.backdrop })
+  /* stencil: the band is cut out wherever the scene drew */
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: !options.backdrop, stencil: true })
   renderer.setClearColor(0x000000, 0)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.setSize(width, height)
   mount.appendChild(renderer.domElement)
+  const band = createBand(options.band ?? false)
+  const bandShape: BandShape = { ...POSE.band }
   const effect = new OutlineEffect(renderer, { defaultThickness: 0.0045, defaultColor: PALETTE.outline })
   /* frames are composed from several passes, cleared once by hand */
   renderer.autoClear = false
@@ -406,6 +412,11 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     const floatE = smooth(floatT)
     const fl = POSE.float
     const lerp = THREE.MathUtils.lerp
+    const hb = POSE.band
+    bandShape.bottom = lerp(hb.bottom, fl.band.bottom, floatE)
+    bandShape.width = lerp(hb.width, fl.band.width, floatE)
+    bandShape.lean = lerp(hb.lean, fl.band.lean, floatE)
+    band.update(dt, bandShape)
 
     /* breathing */
     stage.position.y = Math.sin(elapsed * 1.7) * 0.003
@@ -684,7 +695,12 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   const renderFrame = () => {
     renderer.clear()
     if (!background) {
+      scene.traverse((o) => {
+        const material = (o as THREE.Mesh).material
+        if (material) (Array.isArray(material) ? material : [material]).forEach(writeBandStencil)
+      })
       effect.render(scene, camera)
+      band.render(renderer)
       return
     }
     const sky = scene.background
@@ -733,6 +749,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   return {
     setCard,
     setCardState,
+    setBand: band.setShown,
     dispose: () => {
       disposed = true
       renderer.setAnimationLoop(null)
@@ -745,6 +762,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
       spinPending?.dispose()
       queued?.dispose()
       lanyard.dispose()
+      band.dispose()
       background?.dispose()
       renderer.dispose()
       renderer.forceContextLoss()

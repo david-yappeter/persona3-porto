@@ -49,7 +49,7 @@ export const RootLayout = () => {
       </main>
 
       <MusicPlayer />
-      <CommandHint title="Use a Skill" />
+      <CommandHint title="" command="" />
     </div>
   )
 }

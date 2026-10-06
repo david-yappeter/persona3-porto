@@ -168,6 +168,10 @@ export const mountPoseLab = () => {
   const toggleButton = float.add(preview, 'toggle').name('▶ Play floating')
   float.add(POSE.float, 'duration', 0.1, 3, 0.05).name('blend time (s)')
   float.add(POSE.float.body, 'turn', -60, 60, 0.5).name('body turn (°)')
+  const floatBand = float.addFolder('white band').close()
+  floatBand.add(POSE.float.band, 'width', 0, 1.5, 0.005).name('width')
+  floatBand.add(POSE.float.band, 'bottom', -0.5, 1.5, 0.005).name('lower edge at bottom (x)')
+  floatBand.add(POSE.float.band, 'lean', -2, 2, 0.01).name('slant')
   look(float, POSE.float.neck, POSE.float.head, 'neck & head').close()
   const floatArm = float.addFolder('arm')
   floatArm.add(POSE.float.arm, 'elbowAngle', 20, 180, 1).name('elbow (° 180=straight)')
@@ -202,6 +206,11 @@ export const mountPoseLab = () => {
   shading.add(POSE.shading, 'bands', 0, 5, 1).name('cel steps (0 = smooth)')
   shading.add(POSE.shading, 'from', 0, 1, 0.01).name('from brightness')
   vector(shading, POSE.shading.light, 'light comes from', [R(-1, 1), R(-1, 1), R(-1, 1)], WORLD_AXES, 0.05)
+
+  const band = gui.addFolder('White band (list page)')
+  band.add(POSE.band, 'width', 0, 1.5, 0.005).name('width')
+  band.add(POSE.band, 'bottom', -0.5, 1.5, 0.005).name('lower edge at bottom (x)')
+  band.add(POSE.band, 'lean', -2, 2, 0.01).name('slant')
 
   const wind = gui.addFolder('Wind (coat / hair)')
   wind.add(POSE.wind, 'strength', 0, 25, 0.5).name('strength (°)')

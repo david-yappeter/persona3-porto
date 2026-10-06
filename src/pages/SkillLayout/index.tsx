@@ -85,7 +85,7 @@ export const SkillLayout = () => {
 
   return (
     <>
-      <MenuBackground videoSrc={OCEAN_BG} decoText={detail ? '' : undefined} />
+      <MenuBackground videoSrc={OCEAN_BG} />
       <SocialLinkScene
         card={card}
         cardState={detail ? 'floating' : 'held'}
@@ -96,6 +96,9 @@ export const SkillLayout = () => {
         unshadedMaterials={MAKOTO_UNSHADED}
         originalMaterials
         menuColors
+        /* the S. Link white diagonal band; its shape moves with the pose
+           (POSE.band -> POSE.float.band) */
+        band
       />
       <Outlet context={{ active, setActive } satisfies SkillOutletContext} />
 

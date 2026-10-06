@@ -14,7 +14,7 @@ type MenuBackgroundProps = {
 
 export const MenuBackground = ({
   videoSrc = `${import.meta.env.BASE_URL}assets/persona_3_menu_bg.mp4`,
-  decoText = 'WA',
+  decoText = '',
   flip = false,
   entranceSrc,
 }: MenuBackgroundProps) => {

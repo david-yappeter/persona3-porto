@@ -108,7 +108,7 @@ export const POSE = {
        never has one. */
     outline: 'bright' as OutlineMode,
     /* line thickness (0.0045 = the old full outline) */
-    outlineWidth: 0.0005,
+    outlineWidth: 0.001,
   },
   /* extra shading on the white parts (skin, shirt, hands), which the
      colour grade otherwise blows out flat. Darkens only, never adds
@@ -124,6 +124,16 @@ export const POSE = {
        +Y up, +Z toward the camera) */
     light: v3(0.5, 0.7, 0.6),
   },
+  /* the white diagonal band behind the character on the list page, in
+     screen fractions (x from the left, y from the top) */
+  band: {
+    /* where its lower (right-hand) edge meets the bottom of the screen */
+    bottom: 0.645,
+    /* horizontal distance between its two edges */
+    width: 0.655,
+    /* how far right the edges move per screen height going up (the slant) */
+    lean: 0.59,
+  },
   /* second state ("floating"): the card arm lifts with the palm open toward
      the camera while the card leaves the hand and floats in front of the
      chest, facing the camera (it only flips when the face changes). Every
@@ -133,6 +143,8 @@ export const POSE = {
     /* seconds to blend between held and floating, either way */
     duration: 0.3,
     body: { turn: -26.5 },
+    /* the white band slides to this shape while floating */
+    band: { bottom: 0.835, width: 0.725, lean: 0.96 },
     neck: { pitch: 0, yaw: 0, roll: 0 },
     head: { pitch: 7.5, yaw: 0, roll: 0 },
     arm: { dir: v3(0.07, -0.01, 1), elbowAngle: 115, pole: v3(0.2, -0.75, -0.5) },
