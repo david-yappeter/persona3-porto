@@ -134,6 +134,16 @@ export const POSE = {
     /* how far right the edges move per screen height going up (the slant) */
     lean: 0.59,
   },
+  /* the character's flat silhouette cast on the band, offset like a drop
+     shadow; it shows on the band only */
+  shadow: {
+    /* 0 = none, 1 = the full colour */
+    strength: 0.66,
+    color: '#747781',
+    /* offset as screen fractions: x + = right, y + = down */
+    x: 0.036,
+    y: 0.036,
+  },
   /* second state ("floating"): the card arm lifts with the palm open toward
      the camera while the card leaves the hand and floats in front of the
      chest, facing the camera (it only flips when the face changes). Every

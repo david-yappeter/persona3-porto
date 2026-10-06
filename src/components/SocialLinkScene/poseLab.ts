@@ -211,6 +211,11 @@ export const mountPoseLab = () => {
   band.add(POSE.band, 'width', 0, 1.5, 0.005).name('width')
   band.add(POSE.band, 'bottom', -0.5, 1.5, 0.005).name('lower edge at bottom (x)')
   band.add(POSE.band, 'lean', -2, 2, 0.01).name('slant')
+  const shadow = band.addFolder('character shadow on it')
+  shadow.add(POSE.shadow, 'strength', 0, 1, 0.01).name('strength')
+  shadow.addColor(POSE.shadow, 'color').name('colour')
+  shadow.add(POSE.shadow, 'x', -0.3, 0.3, 0.002).name('offset x (+ right)')
+  shadow.add(POSE.shadow, 'y', -0.3, 0.3, 0.002).name('offset y (+ down)')
 
   const wind = gui.addFolder('Wind (coat / hair)')
   wind.add(POSE.wind, 'strength', 0, 25, 0.5).name('strength (°)')

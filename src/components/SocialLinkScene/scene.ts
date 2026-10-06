@@ -715,7 +715,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
       })
       effect.render(scene, camera)
       /* not before the character is there to cut its hole */
-      if (ready) band.render(renderer)
+      if (ready) band.render(renderer, scene, camera, POSE.shadow)
       return
     }
     const sky = scene.background
