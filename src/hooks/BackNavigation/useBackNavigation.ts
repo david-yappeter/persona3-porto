@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
 /** Backspace/Escape go back one level — real browser history back when this
-    tab actually navigated here in-app (so /experiences/2 -> /experiences -> / unwinds
+    tab actually navigated here in-app (so /careers/2 -> /careers -> / unwinds
     the same way it was entered), or up to the parent path when there's no
     such history (a reload or direct link landed straight on this route).
     No-op on "/" itself, since there's nowhere further back to go. */

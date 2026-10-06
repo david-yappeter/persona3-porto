@@ -11,7 +11,7 @@ export const router = createBrowserRouter(
       children: [
         { index: true, Component: MainMenu },
         {
-          path: 'experiences',
+          path: 'careers',
           /* shared shell holding the background + 3D scene, so they persist
              between the list and a detail page. three.js (~500KB) is only
              needed here — code-split so "/" doesn't pay for it upfront */

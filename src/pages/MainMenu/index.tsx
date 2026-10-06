@@ -10,7 +10,7 @@ const ENTRANCE_SRC = `${import.meta.env.BASE_URL}assets/persona_3_menu_bg_entran
  * The browser's actual initial URL, read once when this module first
  * evaluates (i.e. once per real page load/reload) — not the route MainMenu
  * happens to mount on, which can happen later via SPA nav after booting on
- * a different page entirely (e.g. reload on "/experiences", then navigate home:
+ * a different page entirely (e.g. reload on "/careers", then navigate home:
  * MainMenu's first-ever mount this session is on "/", but that's page
  * switching, not a reload of "/", so it must not get the entrance).
  */

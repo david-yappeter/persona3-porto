@@ -8,8 +8,8 @@ import { useBackNavigation } from '../../hooks/BackNavigation'
 import { useNavigationSound } from '../../hooks/NavigationSound'
 import './RootLayout.css'
 
-/* /experiences and /experiences/:index */
-const SKILL_SECTION = /^\/experiences(\/|$)/
+/* /careers and /careers/:index */
+const SKILL_SECTION = /^\/careers(\/|$)/
 
 /*
  * Persistent chrome. Everything here sits outside RouteTransition, so it
@@ -36,13 +36,13 @@ export const RootLayout = () => {
 
       <main className="route-view">
         {/* rules lets any specific from->to pair play a different kind —
-            anything not listed falls back to defaultKind. Within /experiences the
+            anything not listed falls back to defaultKind. Within /careers the
             shared SkillLayout stays mounted and its 3D scene animates the
             change instead (held card <-> floating card). */}
         <RouteTransition
           defaultKind={RouteTransitionKind.CircleReveal}
           rules={[
-            { from: '/', to: '/experiences', kind: RouteTransitionKind.DoubleRipple },
+            { from: '/', to: '/careers', kind: RouteTransitionKind.DoubleRipple },
             { from: SKILL_SECTION, to: SKILL_SECTION, kind: RouteTransitionKind.None },
           ]}
         />

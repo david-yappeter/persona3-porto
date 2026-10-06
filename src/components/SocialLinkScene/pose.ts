@@ -6,7 +6,7 @@ export type OutlineMode = 'off' | 'bright' | 'all'
 
 /** Every hand-tuned number of the framing and held pose, in one mutable
     object. The scene reads it each frame, so the dev pose lab
-    (`/experiences/0?lab`) can edit it live and copy it out as JSON.
+    (`/careers/0?lab`) can edit it live and copy it out as JSON.
     Angles are degrees, distances metres. Character-space vectors face +Z
     with the card (left) hand on +X. */
 export const POSE = {
