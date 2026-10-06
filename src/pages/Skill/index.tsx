@@ -4,6 +4,11 @@ import { SkillRow } from '../../components/SkillRow'
 import { EXPERIENCE } from '../../data/experience'
 import { useMenuNavigation } from '../../hooks/MenuNavigation'
 import { useSkillContext } from '../SkillLayout'
+import './Skill.css'
+
+/* P3R camp-menu portrait collage; the art sits in the bottom-right of a
+   transparent square, so the square is pinned to that corner */
+const CAMP_ART = `${import.meta.env.BASE_URL}assets/UI_camp_1.png`
 
 /* placeholder list page. The background and the 3D character (card held
    in the hand here) belong to SkillLayout; the card shows the row under
@@ -32,6 +37,7 @@ export const Skill = () => {
 
   return (
     <>
+      <img className="skill-camp-art" src={CAMP_ART} alt="" aria-hidden="true" />
       {/* position+z-index needed so this stacks above MenuBackground's
           un-z-indexed absolute layers, which would otherwise paint over it */}
       <div style={{ position: 'relative', zIndex: 1, height: '100%', padding: '2rem', paddingTop: '7rem' }}>

@@ -1,0 +1,28 @@
+/* the 2048px square PNG holds the collage at x 1041–2000, y 893–2013
+   (shadows included). Scaled so that box is 85% of the viewport height,
+   then pushed past the corner by the empty margin so the collage itself
+   meets the top and right edges. */
+.skill-camp-art {
+  --size: calc(90vh * 2048 / 1120);
+  position: absolute;
+  z-index: 1;
+  top: calc(var(--size) * -893 / 2048);
+  right: calc(var(--size) * -125 / 2048);
+  width: var(--size);
+  height: var(--size);
+  pointer-events: none;
+  user-select: none;
+  animation: skill-camp-art-in 0.20s ease-out both;
+}
+
+/* slides in from the top-right corner */
+@keyframes skill-camp-art-in {
+  from {
+    opacity: 0;
+    transform: translate(6%, -6%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+}

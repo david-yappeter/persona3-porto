@@ -60,6 +60,7 @@ export const PRELOAD_MANIFEST: PreloadAsset[] = [
   { url: asset('music/changing-seasons-reload.m4a'), kind: 'fetch' },
   { url: asset('fonts/EurostileExtendedBlack.ttf'), kind: 'font' },
   ...MAKOTO_FILES.map((f) => ({ url: asset(MAKOTO + f), kind: 'fetch' as const })),
+  { url: asset('assets/UI_camp_1.png'), kind: 'fetch' },
   ...EXPERIENCE_IMAGES.map((url) => ({ url, kind: 'fetch' as const })),
   /* the same chunks router.tsx lazy-loads; weights ≈ their gzipped size */
   { kind: 'module', load: () => import('../../pages/SkillLayout'), weight: 240_000 },
