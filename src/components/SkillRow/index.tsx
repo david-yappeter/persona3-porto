@@ -12,14 +12,18 @@ type SkillRowProps = {
   current?: boolean
   /** red border cursor — true for the row the keyboard selection is on */
   selected?: boolean
+  /** mouse hover moves the cursor here */
+  onSelect?: () => void
+  /** click / tap opens the entry */
+  onActivate?: () => void
 }
 
-export const SkillRow = ({ headSrc, title, company, period, current, selected }: SkillRowProps) => {
+export const SkillRow = ({ headSrc, title, company, period, current, selected, onSelect, onActivate }: SkillRowProps) => {
   const titleRef = useFitText(title)
   const companyRef = useFitText(company)
 
   return (
-    <div className={`skill-row${selected ? ' is-selected' : ''}`}>
+    <div className={`skill-row${selected ? ' is-selected' : ''}`} onMouseEnter={onSelect} onClick={onActivate}>
       <img className="skill-row-bg" src={headSrc} alt="" aria-hidden="true" />
       {current && <span className="skill-row-tag">Current</span>}
       <div className="skill-row-content">

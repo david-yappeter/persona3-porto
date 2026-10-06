@@ -3,7 +3,7 @@
    then pushed past the corner by the empty margin so the collage itself
    meets the top and right edges. */
 .skill-camp-art {
-  --size: calc(90vh * 2048 / 1120);
+  --size: calc(90 * var(--vh) * 2048 / 1120);
   position: absolute;
   z-index: 1;
   top: calc(var(--size) * -893 / 2048);

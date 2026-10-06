@@ -16,7 +16,7 @@ const CAMP_ART = `${import.meta.env.BASE_URL}assets/UI_camp_1.png`
 export const Skill = () => {
   const navigate = useNavigate()
   const { active, setActive } = useSkillContext()
-  const { selected } = useMenuNavigation(EXPERIENCE.length, active)
+  const { selected, moveTo } = useMenuNavigation(EXPERIENCE.length, active)
 
   useEffect(() => {
     setActive(selected)
@@ -42,7 +42,13 @@ export const Skill = () => {
           un-z-indexed absolute layers, which would otherwise paint over it */}
       <div style={{ position: 'relative', zIndex: 1, height: '100%', padding: '2rem', paddingTop: '7rem' }}>
         {EXPERIENCE.map((exp, i) => (
-          <SkillRow key={exp.company} {...exp} selected={i === selected} />
+          <SkillRow
+            key={exp.company}
+            {...exp}
+            selected={i === selected}
+            onSelect={() => moveTo(i)}
+            onActivate={() => void navigate(`/careers/${i}`)}
+          />
         ))}
         <button
           style={{

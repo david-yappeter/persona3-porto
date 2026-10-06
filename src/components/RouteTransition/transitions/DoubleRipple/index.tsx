@@ -43,11 +43,13 @@ type Origin = { x: number; y: number; scale: number }
  * measured off `liveRef` since it always matches the clip-defs SVG's box.
  */
 function measureOrigin(el: HTMLElement): Origin {
-  const rect = el.getBoundingClientRect()
-  const diagonal = Math.hypot(rect.width, rect.height)
+  /* layout size, not getBoundingClientRect: the stage may be scaled */
+  const width = el.offsetWidth
+  const height = el.offsetHeight
+  const diagonal = Math.hypot(width, height)
   return {
-    x: rect.width * 0.2,
-    y: rect.height * 0.2,
+    x: width * 0.2,
+    y: height * 0.2,
     scale: (diagonal / BLOB_MIN_RADIUS) * 1.05,
   }
 }

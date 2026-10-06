@@ -1,4 +1,5 @@
 .skill-row {
+  cursor: pointer;
   /* the black bar is painted here and cut to shape by --skill-row-shape;
      head_row_*_colored.png rides on top of it as the band + head silhouette */
   --skill-row-h: 70px;

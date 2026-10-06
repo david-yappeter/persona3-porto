@@ -1,0 +1,9 @@
+/* the transform also makes it the containing block for position: fixed
+   layers inside (preloader, transitions), so they stay on the stage */
+.stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  overflow: hidden;
+  transform-origin: center;
+}

@@ -11,6 +11,12 @@ body,
   height: 100%;
 }
 
+/* phones: the dynamic height leaves out the browser's toolbars */
+#root {
+  position: relative;
+  height: 100dvh;
+}
+
 body {
   background: #000;
   color: #fff;

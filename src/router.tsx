@@ -24,6 +24,10 @@ export const router = createBrowserRouter(
             },
           ],
         },
+        /* dev-only figure lab: the character alone with a slider panel */
+        ...(import.meta.env.DEV
+          ? [{ path: 'figure-lab', lazy: () => import('./pages/FigureLab').then((m) => ({ Component: m.FigureLab })) }]
+          : []),
       ],
     },
   ],

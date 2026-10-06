@@ -19,7 +19,7 @@
 }
 
 .asset-preloader-bar {
-  width: min(60vw, 420px);
+  width: min(60 * var(--vw), 420px);
   height: 6px;
   background: rgba(255, 255, 255, 0.15);
   overflow: hidden;

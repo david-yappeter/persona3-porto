@@ -52,7 +52,7 @@ export const SkillDetail = () => {
             <span>L</span>
           </span>
 
-          <span className="skill-detail-title">SOCIAL LINK</span>
+          <span className="skill-detail-title">EXPERIENCE</span>
 
           <span className="skill-detail-nav">
             <span>R</span>

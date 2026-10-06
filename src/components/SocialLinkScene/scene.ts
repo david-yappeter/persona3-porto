@@ -7,6 +7,7 @@ import { solveTwoBoneIK, swingBone } from './ik'
 import { LAB, POSE } from './pose'
 import { createBand, writeBandStencil, type BandShape } from './band'
 import { PALETTE, createGrade, createToonGradient } from './toon'
+import { stageScale } from '../../utils/stage'
 
 /* floating = the second pose: open palm, card floating and turning in
    front of the chest (see POSE.float) */
@@ -99,7 +100,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
   /* stencil: the band is cut out wherever the scene drew */
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: !options.backdrop, stencil: true })
   renderer.setClearColor(0x000000, 0)
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio * stageScale(), 2))
   renderer.setSize(width, height)
   mount.appendChild(renderer.domElement)
   const taken = handoff && performance.now() - handoff.at < HANDOFF_TTL ? handoff : null

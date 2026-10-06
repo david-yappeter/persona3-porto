@@ -3,7 +3,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { VRMLoaderPlugin, VRMUtils, type VRM } from '@pixiv/three-vrm'
 import { noOutline, toonify, type Grade } from './toon'
 import { addLongCoat } from './coat'
-import { buildWind } from './wind'
+import { buildWind, type Motion } from './wind'
+import { buildFace, type FaceRig } from './face'
+import { POSE } from './pose'
 
 export type ArmChain = { upper: THREE.Object3D; lower: THREE.Object3D; hand: THREE.Object3D }
 
@@ -43,10 +45,17 @@ export type CharacterRig = {
       IK); the shoulders keep their place even on rigs whose clavicles hang
       off the neck. A no-op for a rig without the bones. */
   look: (neck: THREE.Quaternion, head: THREE.Quaternion) => void
+  /** bends the body by world-space rotations over rest: the spine (spread
+      over its segments, legs kept in place) and each leg's hip and knee
+      ([left, right]). Call after update and before look; rigs without the
+      bones skip those parts. */
+  bend: (spine: THREE.Quaternion, hips: readonly THREE.Quaternion[], knees: readonly THREE.Quaternion[]) => void
   /** before IK: reset arms to rest / advance animation */
   update: (dt: number) => void
-  /** after IK: hair/cloth physics, blinking */
-  postUpdate: (dt: number) => void
+  /** face bones (expressions); null when the rig has none */
+  face: FaceRig | null
+  /** after IK: hair/cloth physics, blinking (motion defaults to POSE.wind) */
+  postUpdate: (dt: number, motion?: Motion) => void
   dispose: () => void
 }
 
@@ -141,6 +150,94 @@ const restTransformKeeper = (bones: THREE.Object3D[]) => {
     })
 }
 
+/* bone's world rotation becomes delta * world, about its own origin */
+const turnInWorld = (() => {
+  const worldQ = new THREE.Quaternion()
+  const parentQ = new THREE.Quaternion()
+  return (bone: THREE.Object3D, delta: THREE.Quaternion) => {
+    bone.getWorldQuaternion(worldQ).premultiply(delta)
+    if (bone.parent) bone.parent.getWorldQuaternion(parentQ).invert()
+    else parentQ.identity()
+    bone.quaternion.copy(parentQ.multiply(worldQ))
+    bone.updateMatrixWorld(true)
+  }
+})()
+
+/* exact normalized names (see normalizeName) for 3ds Max Biped, Mixamo and
+   VRM; %/^ = l/r or left/right */
+const BEND_BONES = {
+  spine: [['bip01spine', 'spine'], ['bip01spine1', 'spine1', 'chest'], ['bip01spine2', 'spine2', 'upperchest']],
+  thigh: ['bip01%thigh', '^upleg', '^upperleg'],
+  calf: ['bip01%calf', '^leg', '^lowerleg'],
+} as const
+
+/** body bending, see CharacterRig.bend */
+const buildBend = (model: THREE.Object3D) => {
+  const byName = new Map<string, THREE.Object3D>()
+  model.traverse((o) => {
+    const key = normalizeName(o.name)
+    if (!byName.has(key)) byName.set(key, o)
+  })
+  const pick = (names: readonly string[], side?: 'l' | 'r') => {
+    for (const name of names) {
+      const hit = byName.get(side ? name.replace('%', side).replace('^', side === 'l' ? 'left' : 'right') : name)
+      if (hit) return hit
+    }
+    return null
+  }
+  const spine = BEND_BONES.spine.map((names) => pick(names)).filter((b): b is THREE.Object3D => !!b)
+  const legs = (['l', 'r'] as const).map((side) => ({ thigh: pick(BEND_BONES.thigh, side), calf: pick(BEND_BONES.calf, side) }))
+  /* a Biped's thigh/calf twist bones hang off the spine/thigh rather than
+     the bone they twist with — they're made to follow it, like the arms' */
+  const followers: { bone: THREE.Object3D; leader: THREE.Object3D; offset: THREE.Matrix4 }[] = []
+  model.updateMatrixWorld(true)
+  for (const [i, side] of (['l', 'r'] as const).entries()) {
+    for (const [part, leader] of [['thigh', legs[i].thigh], ['calf', legs[i].calf]] as const) {
+      const bone = byName.get(`bip01${side}${part}twist`)
+      if (bone && leader) followers.push({ bone, leader, offset: leader.matrixWorld.clone().invert().multiply(bone.matrixWorld) })
+    }
+  }
+  /* bending the spine mustn't swing legs that hang off it */
+  const pinned = [...legs.map((l) => l.thigh), ...followers.map((f) => f.bone)].filter(
+    (b): b is THREE.Object3D => !!b && spine.some((s) => b.parent === s),
+  )
+  const reset = restTransformKeeper([...spine, ...legs.flatMap((l) => [l.thigh, l.calf]), ...followers.map((f) => f.bone)].filter((b): b is THREE.Object3D => !!b))
+  const saved = pinned.map(() => new THREE.Matrix4())
+  const inv = new THREE.Matrix4()
+  const world = new THREE.Matrix4()
+  const step = new THREE.Quaternion()
+  const IDENTITY = new THREE.Quaternion()
+
+  return {
+    reset,
+    bend: (spineDelta: THREE.Quaternion, hips: readonly THREE.Quaternion[], knees: readonly THREE.Quaternion[]) => {
+      if (spine.length) {
+        pinned.forEach((o, i) => saved[i].copy(o.matrixWorld))
+        /* the same share at every segment adds up to the whole bend at the top */
+        step.slerpQuaternions(IDENTITY, spineDelta, 1 / spine.length)
+        for (const bone of spine) turnInWorld(bone, step)
+        pinned.forEach((o, i) => {
+          if (!o.parent) return
+          inv.copy(o.parent.matrixWorld).invert()
+          inv.multiply(saved[i]).decompose(o.position, o.quaternion, o.scale)
+          o.updateMatrixWorld(true)
+        })
+      }
+      legs.forEach((leg, i) => {
+        if (leg.thigh && hips[i]) turnInWorld(leg.thigh, hips[i])
+        if (leg.calf && knees[i]) turnInWorld(leg.calf, knees[i])
+      })
+      for (const f of followers) {
+        if (!f.bone.parent) continue
+        world.multiplyMatrices(f.leader.matrixWorld, f.offset)
+        inv.copy(f.bone.parent.matrixWorld).invert()
+        world.premultiply(inv).decompose(f.bone.position, f.bone.quaternion, f.bone.scale)
+        f.bone.updateMatrixWorld(true)
+      }
+    },
+  }
+}
+
 /** neck/head turning, see CharacterRig.look */
 const buildLook = (neck: THREE.Object3D | null, head: THREE.Object3D | null, arms: THREE.Object3D[]) => {
   /* the neck's child on the way to each upper arm (the clavicles, in a
@@ -156,32 +253,21 @@ const buildLook = (neck: THREE.Object3D | null, head: THREE.Object3D | null, arm
     : []
   const reset = restTransformKeeper([neck, head, ...pinned].filter((o): o is THREE.Object3D => !!o))
   const saved = pinned.map(() => new THREE.Matrix4())
-  const worldQ = new THREE.Quaternion()
-  const parentQ = new THREE.Quaternion()
   const inv = new THREE.Matrix4()
-
-  /* bone's world rotation becomes delta * world, about its own origin */
-  const turn = (bone: THREE.Object3D, delta: THREE.Quaternion) => {
-    bone.getWorldQuaternion(worldQ).premultiply(delta)
-    if (bone.parent) bone.parent.getWorldQuaternion(parentQ).invert()
-    else parentQ.identity()
-    bone.quaternion.copy(parentQ.multiply(worldQ))
-    bone.updateMatrixWorld(true)
-  }
 
   return {
     reset,
     look: (neckDelta: THREE.Quaternion, headDelta: THREE.Quaternion) => {
       if (neck) {
         pinned.forEach((o, i) => saved[i].copy(o.matrixWorld))
-        turn(neck, neckDelta)
+        turnInWorld(neck, neckDelta)
         pinned.forEach((o, i) => {
           inv.copy(neck.matrixWorld).invert()
           inv.multiply(saved[i]).decompose(o.position, o.quaternion, o.scale)
           o.updateMatrixWorld(true)
         })
       }
-      if (head) turn(head, headDelta)
+      if (head) turnInWorld(head, headDelta)
     },
   }
 }
@@ -435,6 +521,7 @@ export const loadCharacter = async (url: string, options: LoadOptions): Promise<
     const mixer = !vrm && gltf.animations.length ? new THREE.AnimationMixer(model) : null
     if (mixer) mixer.clipAction(gltf.animations[0]).play()
     const resetArms = restPoseKeeper([lu, ll, lh, ru, rl, rh])
+    const bender = vrm ? null : buildBend(model)
     const looker = buildLook(findBone(model, 'neck', overrides, true), findBone(model, 'head', overrides, true), [lu, ru])
     const blink = vrm ? createBlinker(vrm) : null
     /* measured in the normalized rest pose, before anything is posed */
@@ -459,6 +546,8 @@ export const loadCharacter = async (url: string, options: LoadOptions): Promise<
     const followTwists = buildTwistFollowers([cardArm, otherArm])
     /* VRMs sway via their own spring bones */
     const wind = vrm ? null : buildWind(model)
+    const face = vrm ? null : buildFace(root)
+    const defaultMotion: Motion = { wind: POSE.wind }
 
     return {
       root,
@@ -467,17 +556,21 @@ export const loadCharacter = async (url: string, options: LoadOptions): Promise<
       cardHand,
       otherHand,
       look: looker.look,
+      bend: (spine, hips, knees) => bender?.bend(spine, hips, knees),
+      face,
       update: (dt) => {
         /* always from rest first: wrist() turns the hand relative to its
            current pose, which must not carry over between frames on bones
            an animation clip doesn't key */
         resetArms()
         looker.reset()
+        bender?.reset()
+        face?.reset()
         mixer?.update(dt)
       },
-      postUpdate: (dt) => {
+      postUpdate: (dt, motion = defaultMotion) => {
         followTwists()
-        wind?.(dt)
+        wind?.(dt, motion)
         if (!vrm) return
         blink?.(dt)
         vrm.update(dt)

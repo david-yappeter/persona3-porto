@@ -207,7 +207,7 @@ const toJson = (value: unknown): Json => {
 }
 
 /** the pose as pretty JSON, number arrays kept on one line */
-export const poseToJson = (pose: Pose = POSE) =>
+export const poseToJson = (pose: object = POSE) =>
   JSON.stringify(toJson(pose), null, 2).replace(/\[\s+([-\d.,\s]+?)\s+\]/g, (_, inner: string) => `[${inner.split(/,\s*/).join(', ')}]`)
 
 /** writes a (possibly partial) JSON pose into POSE in place; unknown keys

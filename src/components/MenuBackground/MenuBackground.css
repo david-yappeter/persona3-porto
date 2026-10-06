@@ -42,10 +42,10 @@
 .deco-type {
   position: absolute;
   top: 50%;
-  left: -3vw;
+  left: calc(-3 * var(--vw));
   transform: translateY(-50%) rotate(-90deg) skewX(-12deg);
   transform-origin: center;
-  font-size: 34vh;
+  font-size: calc(34 * var(--vh));
   font-weight: 900;
   line-height: 0.8;
   letter-spacing: -0.05em;
