@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { CardFace } from './card'
-import type { BoneNameOverrides } from './character'
+import type { BoneNameOverrides, TextureBorrow } from './character'
 import { mountSocialLinkScene, type CardState, type SocialLinkSceneController } from './scene'
 import './SocialLinkScene.css'
 
@@ -27,6 +27,8 @@ type SocialLinkSceneProps = {
   unshadedMaterials?: RegExp
   /** keep a non-VRM model's own materials instead of toon-converting them */
   originalMaterials?: boolean
+  /** materials that take another material's texture (see TextureBorrow) */
+  borrowTextures?: TextureBorrow[]
   /** recolour the character into the P3 menu duotone (violet > blue > cyan >
       white by brightness); defaults to on with the backdrop */
   menuColors?: boolean
@@ -51,6 +53,7 @@ export const SocialLinkScene = ({
   brightMaterials,
   unshadedMaterials,
   originalMaterials = false,
+  borrowTextures,
   menuColors,
   band = false,
 }: SocialLinkSceneProps) => {
@@ -74,6 +77,7 @@ export const SocialLinkScene = ({
       brightMaterials,
       unshadedMaterials,
       originalMaterials,
+      borrowTextures,
       menuColors,
       band: latest.current.band,
     })
@@ -84,7 +88,7 @@ export const SocialLinkScene = ({
       controllerRef.current = null
     }
     /* keyed by content — boneNames is usually an inline object literal */
-  }, [modelSrc, JSON.stringify(boneNames ?? {}), backdrop, hiddenMaterials?.source, brightMaterials?.source, unshadedMaterials?.source, originalMaterials, menuColors])
+  }, [modelSrc, JSON.stringify(boneNames ?? {}), backdrop, hiddenMaterials?.source, brightMaterials?.source, unshadedMaterials?.source, originalMaterials, menuColors, borrowTextures?.map((b) => `${b.to.source}<${b.from.source}`).join()])
 
   const { image, imageFit, title, subtitle, numeral } = card
   useEffect(() => {

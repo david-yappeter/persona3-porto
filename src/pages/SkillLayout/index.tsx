@@ -3,7 +3,7 @@ import { Outlet, useOutletContext, useParams } from 'react-router'
 import { MenuBackground } from '../../components/MenuBackground'
 import { SocialLinkScene, type CardFace } from '../../components/SocialLinkScene'
 import { EXPERIENCE } from '../../data/experience'
-import { MAKOTO_BRIGHT, MAKOTO_HIDDEN, MAKOTO_MODEL, MAKOTO_UNSHADED } from '../../data/makoto'
+import { MAKOTO_BRIGHT, MAKOTO_HIDDEN, MAKOTO_MODEL, MAKOTO_TEXTURES, MAKOTO_UNSHADED } from '../../data/makoto'
 import './SkillLayout.css'
 
 /* seamless ocean loop behind the character on both the list and detail pages */
@@ -87,6 +87,7 @@ export const SkillLayout = () => {
         brightMaterials={MAKOTO_BRIGHT}
         unshadedMaterials={MAKOTO_UNSHADED}
         originalMaterials
+        borrowTextures={MAKOTO_TEXTURES}
         menuColors
         /* the S. Link white diagonal band; its shape moves with the pose
            (POSE.band -> POSE.float.band) */

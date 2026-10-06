@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js'
-import { loadCharacter, type ArmChain, type CharacterRig, type HandRig } from './character'
+import { loadCharacter, type ArmChain, type CharacterRig, type HandRig, type TextureBorrow } from './character'
 import { FIGURE, FIGURE_LAB } from './figure'
 import { solveTwoBoneIK } from './ik'
 import { POSE } from './pose'
@@ -17,6 +17,7 @@ export type FigureSceneOptions = {
   hiddenMaterials?: RegExp
   brightMaterials?: RegExp
   unshadedMaterials?: RegExp
+  borrowTextures?: TextureBorrow[]
 }
 
 const deg = THREE.MathUtils.degToRad
@@ -67,6 +68,7 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
     grade,
     hiddenMaterials: options.hiddenMaterials,
     originalMaterials: true,
+    borrowTextures: options.borrowTextures,
   }).then((loaded) => {
     if (disposed) {
       loaded?.dispose()
@@ -115,6 +117,7 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
     body: bodyQ,
     gravity: { direction: gravityDir, strength: 0 },
     accessories: FIGURE.accessories,
+    hair: FIGURE.hair,
   }
 
   /* a neck/head turn in character-space degrees, as the world-space
@@ -153,6 +156,8 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
   }
 
   let floatT = 0
+  /* the face as posed, plus the automatic blink */
+  const face = { ...FIGURE.face }
   let last = performance.now()
 
   const tick = (now: number) => {
@@ -205,7 +210,16 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
       poseArm(rig.otherArm, FIGURE.rightArm)
       poseHand(rig.cardHand, FIGURE.leftHand, FIGURE.leftFingers)
       poseHand(rig.otherHand, FIGURE.rightHand, FIGURE.rightFingers)
-      rig.face?.apply(FIGURE.face, FIGURE.facial)
+      Object.assign(face, FIGURE.face)
+      const { blinkEvery, blinkTime } = FIGURE.face
+      if (blinkEvery > 0) {
+        /* shut and open again over blinkTime, at the start of every period */
+        const phase = (floatT % Math.max(blinkEvery, blinkTime)) / Math.max(blinkTime, 0.01)
+        const shut = phase < 1 ? Math.sin(phase * Math.PI) : 0
+        face.blinkL = Math.max(face.blinkL, shut)
+        face.blinkR = Math.max(face.blinkR, shut)
+      }
+      rig.face?.apply(face, FIGURE.facial)
       gravityDir.copy(FIGURE.gravity.direction)
       motion.gravity!.strength = FIGURE.gravity.strength
       rig.postUpdate(motionDt, motion)

@@ -55,6 +55,8 @@ export const mountFigureLab = () => {
   face.add(FIGURE.face, 'gazePitch', -10, 10, 0.25).name('eyes look (° + up)')
   face.add(FIGURE.face, 'blinkL', 0, 1, 0.01).name('close left eye (his)')
   face.add(FIGURE.face, 'blinkR', 0, 1, 0.01).name('close right eye (his)')
+  face.add(FIGURE.face, 'blinkEvery', 0, 10, 0.1).name('auto blink every (s, 0 = off)')
+  face.add(FIGURE.face, 'blinkTime', 0.05, 0.6, 0.01).name('auto blink length (s)')
   face.add(FIGURE.face, 'browL', -1, 1, 0.01).name('left brow (+ raise)')
   face.add(FIGURE.face, 'browR', -1, 1, 0.01).name('right brow (+ raise)')
   face.add(FIGURE.face, 'browTilt', -1, 1, 0.01).name('brow tilt (+ worried, - angry)')
@@ -72,6 +74,19 @@ export const mountFigureLab = () => {
   const aim: [Range, Range, Range] = [R(-0.8, 0.8), R(-0.5, 2.5), R(-0.8, 0.8)]
   freeArm(gui.addFolder('Left arm (his)').close(), gui.addFolder('Left hand (his)').close(), FIGURE.leftArm, FIGURE.leftHand, FIGURE.leftFingers, aim)
   freeArm(gui.addFolder('Right arm (his)').close(), gui.addFolder('Right hand (his)').close(), FIGURE.rightArm, FIGURE.rightHand, FIGURE.rightFingers, aim)
+
+  const hair = gui.addFolder('Hair strands (lift off the face, sweep aside)')
+  for (const [name, strand] of [
+    ['front (centre bang)', FIGURE.hair.front],
+    ['front, his right', FIGURE.hair.frontRight],
+    ['front, his left', FIGURE.hair.frontLeft],
+    ['back (all three)', FIGURE.hair.back],
+  ] as const) {
+    const folder = hair.addFolder(name)
+    folder.add(strand, 'lift', -45, 90, 0.5).name('lift (° + away from head)')
+    folder.add(strand, 'sweep', -90, 90, 0.5).name('sweep (° + his left)')
+    folder.add(strand, 'wind', 0, 3, 0.05).name('wind amount')
+  }
 
   const accessories = gui.addFolder('Ribbon / cord / earphone movement')
   const accessory = (name: string, a: AccessoryMotion) => {

@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js'
 import { createBackground } from './background'
 import { CARD_H, CARD_W, createCardMesh, createLanyard, drawCardFace, faceKey, type CardFace } from './card'
-import { loadCharacter, type ArmChain, type BoneNameOverrides, type CharacterRig } from './character'
+import { loadCharacter, type ArmChain, type BoneNameOverrides, type CharacterRig, type TextureBorrow } from './character'
 import { solveTwoBoneIK, swingBone } from './ik'
 import { LAB, POSE } from './pose'
 import { createBand, writeBandStencil, type BandShape } from './band'
@@ -27,6 +27,7 @@ export type SceneOptions = {
   /** kept out of POSE.shading (e.g. the face) */
   unshadedMaterials?: RegExp
   originalMaterials?: boolean
+  borrowTextures?: TextureBorrow[]
   /** P3 menu duotone remap on the character; defaults to on with the backdrop */
   menuColors?: boolean
   /** no-backdrop only: start with the white S. Link band shown (see band.ts) */
@@ -153,6 +154,7 @@ export const mountSocialLinkScene = (mount: HTMLElement, options: SceneOptions) 
     boneNames: options.boneNames,
     hiddenMaterials: options.hiddenMaterials,
     originalMaterials: options.originalMaterials,
+    borrowTextures: options.borrowTextures,
   }).then((loaded) => {
     if (disposed) {
       loaded?.dispose()

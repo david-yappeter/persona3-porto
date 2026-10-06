@@ -8,11 +8,25 @@ import type { POSE } from './pose'
    more toward the tips, with a ripple travelling down the chain. Stylized,
    not simulated: there's no collision with the body.
    Optionally (Motion) gravity bends every chain toward a world direction,
-   and the ribbon / cord / earphone chains get their own extra swing. */
+   the ribbon / cord / earphone chains get their own extra swing, and the
+   hair strands can be styled (lifted off the face, swept aside). */
 
 export type Accessory = 'ribbon' | 'cord' | 'earphone'
 type Group = 'coat' | 'hair' | Accessory
-type Chain = { group: Group; bones: THREE.Object3D[]; rest: THREE.Quaternion[]; phase: number }
+/* the rig's hair strands by their side code: f / fr / fl hang over the
+   face, b / br / bl behind */
+export type HairStrand = 'front' | 'frontRight' | 'frontLeft' | 'back'
+const STRAND_OF: Record<string, HairStrand> = { f: 'front', fr: 'frontRight', fl: 'frontLeft', b: 'back', br: 'back', bl: 'back' }
+type Chain = {
+  group: Group
+  bones: THREE.Object3D[]
+  rest: THREE.Quaternion[]
+  phase: number
+  strand: HairStrand | null
+  /* hair only: inverse of its parent's (the head's) rest orientation in the
+     character's frame, to rebuild face space from the head's pose */
+  headRestInv: THREE.Quaternion | null
+}
 
 export type WindConfig = Omit<typeof POSE.wind, 'accessories'> & {
   /** ribbon / cord / earphone multiplier, when Motion.accessories doesn't set its own */
@@ -40,6 +54,11 @@ export type Motion = {
       straight-down gravity stays as modelled; negative floats them away */
   gravity?: { direction: THREE.Vector3; strength: number }
   accessories?: Record<Accessory, AccessoryMotion>
+  /** degrees, spread over each strand's segments, in face space (follows
+      the head): lift + = away from the head (front strands off the face,
+      back ones out behind), sweep + = toward his left; wind multiplies
+      wind.hair for that strand */
+  hair?: Record<HairStrand, { lift: number; sweep: number; wind: number }>
 }
 
 /* "b <side> <kind><segment>_<id>" (GLTFLoader turns the spaces into
@@ -49,24 +68,36 @@ const GROUP_OF: Record<string, Group> = { jacket: 'coat', hair: 'hair', ribon: '
 
 const deg = THREE.MathUtils.degToRad
 
-export const buildWind = (model: THREE.Object3D) => {
+/** `root` = the character's own frame (+Z forward, +X his left), for the
+    hair styling's face space */
+export const buildWind = (model: THREE.Object3D, root: THREE.Object3D = model) => {
   const nodes: THREE.Object3D[] = []
   model.traverse((o) => nodes.push(o))
-  const found = new Map<string, { group: Group; segments: [number, THREE.Object3D][] }>()
+  const found = new Map<string, { group: Group; side: string; segments: [number, THREE.Object3D][] }>()
   for (const o of nodes) {
     const m = CHAIN_BONE.exec(o.name)
     if (!m) continue
     const key = `${m[1]} ${m[2]}`
-    const entry = found.get(key) ?? { group: GROUP_OF[m[2]], segments: [] }
+    const entry = found.get(key) ?? { group: GROUP_OF[m[2]], side: m[1], segments: [] }
     entry.segments.push([Number(m[3]), o])
     found.set(key, entry)
   }
   if (!found.size) return null
   const center = nodes.find((o) => /^Bip01[ _]Pelvis/.test(o.name)) ?? model
 
-  const chains: Chain[] = [...found.values()].map(({ group, segments }, i) => {
+  root.updateWorldMatrix(true, true)
+  const rootInv = root.getWorldQuaternion(new THREE.Quaternion()).invert()
+  const chains: Chain[] = [...found.values()].map(({ group, side, segments }, i) => {
     const bones = segments.sort((a, b) => a[0] - b[0]).map(([, bone]) => bone)
-    return { group, bones, rest: bones.map((b) => b.quaternion.clone()), phase: i * 1.7 }
+    const head = group === 'hair' ? bones[0].parent : null
+    return {
+      group,
+      bones,
+      rest: bones.map((b) => b.quaternion.clone()),
+      phase: i * 1.7,
+      strand: group === 'hair' ? (STRAND_OF[side] ?? null) : null,
+      headRestInv: head ? head.getWorldQuaternion(new THREE.Quaternion()).premultiply(rootInv).invert() : null,
+    }
   })
 
   const pos = new THREE.Vector3()
@@ -85,6 +116,9 @@ export const buildWind = (model: THREE.Object3D) => {
   const front = new THREE.Vector3()
   const swingAxis = new THREE.Vector3()
   const UPRIGHT = new THREE.Quaternion()
+  const faceQ = new THREE.Quaternion()
+  const lift = new THREE.Vector3()
+  const sweep = new THREE.Vector3()
   let t = 0
   let swingT = 0
 
@@ -122,15 +156,34 @@ export const buildWind = (model: THREE.Object3D) => {
 
     for (const chain of chains) {
       const acc = chain.group === 'coat' || chain.group === 'hair' ? null : (motion.accessories?.[chain.group] ?? null)
-      const amount = chain.group === 'coat' || chain.group === 'hair' ? w[chain.group] : (acc?.amount ?? w.accessories ?? 0)
+      const style = chain.strand ? motion.hair?.[chain.strand] : undefined
+      const amount =
+        chain.group === 'coat' ? w.coat : chain.group === 'hair' ? w.hair * (style?.wind ?? 1) : (acc?.amount ?? w.accessories ?? 0)
       const gravity = pullAngle * (acc?.gravity ?? 1)
       const swing = acc ? deg(acc.swing) : 0
       const n = chain.bones.length
       chain.bones[0].getWorldPosition(out).sub(hub).setY(0)
       if (out.lengthSq() > 1e-8) out.normalize()
+      /* hair styling: face-space axes (X his left, Z out of the face) as
+         world rotation vectors, one share per segment */
+      const head = chain.bones[0].parent
+      let styled = false
+      if (style && chain.headRestInv && head && (style.lift !== 0 || style.sweep !== 0)) {
+        styled = true
+        head.getWorldQuaternion(faceQ).multiply(chain.headRestInv)
+        /* turning about +X swings a hanging strand back, so front strands
+           lift off the face with the opposite sign */
+        const away = chain.strand === 'back' ? 1 : -1
+        lift.set(1, 0, 0).applyQuaternion(faceQ).multiplyScalar((away * deg(style.lift)) / n)
+        sweep.set(0, 0, 1).applyQuaternion(faceQ).multiplyScalar(deg(style.sweep) / n)
+      }
 
       chain.bones.forEach((bone, k) => {
         bone.quaternion.copy(chain.rest[k])
+        if (styled) {
+          spinBy(bone, spin.copy(lift))
+          spinBy(bone, spin.copy(sweep))
+        }
         if (gravity !== 0) spinBy(bone, spin.copy(pull).multiplyScalar(gravity / n))
         if (swing !== 0 && acc) {
           /* pendulum, rippling down the chain, a little forward-back too */

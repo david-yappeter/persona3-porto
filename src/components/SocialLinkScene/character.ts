@@ -71,7 +71,14 @@ export type LoadOptions = {
   hiddenMaterials?: RegExp
   /** non-VRM only: keep the file's own materials instead of toon-converting */
   originalMaterials?: boolean
+  /** non-VRM only: materials matching `to` take the base texture of the
+      material matching `from` (and drop their own flat colour) — for rips
+      that left a texture off one part */
+  borrowTextures?: TextureBorrow[]
 }
+
+/** `offset` shifts where the borrowed texture is read (UV units) */
+export type TextureBorrow = { to: RegExp; from: RegExp; offset?: [u: number, v: number] }
 
 /** model is rescaled so it stands this tall, in metres */
 const CHARACTER_HEIGHT = 1.72
@@ -494,6 +501,25 @@ export const loadCharacter = async (url: string, options: LoadOptions): Promise<
       mesh.material = Array.isArray(mesh.material) ? mesh.material.map(convert) : convert(mesh.material)
     })
     if (vrm) addLongCoat(vrm, gradientMap, grade)
+    if (!vrm && options.borrowTextures?.length) {
+      const materials = new Set<THREE.Material>()
+      model.traverse((o) => {
+        const material = (o as THREE.Mesh).material
+        if (material) (Array.isArray(material) ? material : [material]).forEach((m) => materials.add(m))
+      })
+      for (const { to, from, offset } of options.borrowTextures) {
+        const source = [...materials].find((m) => from.test(m.name) && (m as MToonLike).map) as MToonLike | undefined
+        if (!source?.map) continue
+        const map = offset ? source.map.clone() : source.map
+        if (offset) map.offset.set(offset[0], offset[1])
+        for (const m of materials as Set<MToonLike>) {
+          if (!to.test(m.name)) continue
+          m.map = map
+          m.color?.set(1, 1, 1)
+          m.needsUpdate = true
+        }
+      }
+    }
 
     /* VRM 0.x faces -Z, most other exports face +Z — detect from which side
        the left arm ends up on rather than trusting the format */
@@ -545,7 +571,7 @@ export const loadCharacter = async (url: string, options: LoadOptions): Promise<
     const otherArm = { upper: ru, lower: rl, hand: rh }
     const followTwists = buildTwistFollowers([cardArm, otherArm])
     /* VRMs sway via their own spring bones */
-    const wind = vrm ? null : buildWind(model)
+    const wind = vrm ? null : buildWind(model, root)
     const face = vrm ? null : buildFace(root)
     const defaultMotion: Motion = { wind: POSE.wind }
 
