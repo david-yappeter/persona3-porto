@@ -4,6 +4,7 @@ import { CommandHint } from '../../components/CommandHint'
 import { MusicPlayer } from '../../components/MusicPlayer'
 import { PageTransition } from '../../components/PageTransition'
 import { RouteTransition, RouteTransitionKind } from '../../components/RouteTransition'
+import { TouchControls } from '../../components/TouchControls'
 import { useBackNavigation } from '../../hooks/BackNavigation'
 import { useNavigationSound } from '../../hooks/NavigationSound'
 import './RootLayout.css'
@@ -50,6 +51,7 @@ export const RootLayout = () => {
 
       <MusicPlayer />
       <CommandHint title="" command="" />
+      <TouchControls />
     </div>
   )
 }

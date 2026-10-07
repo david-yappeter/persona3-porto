@@ -28,6 +28,14 @@
 }
 
 .skill-detail-nav {
+  /* a button (tap / click switches entry), drawn as the plain L/R badge */
+  appearance: none;
+  padding: 0.3em 0.2em;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   flex-shrink: 0;
   display: flex;
   align-items: center;

@@ -11,6 +11,13 @@ body,
   height: 100%;
 }
 
+/* no browser pull-to-refresh or overscroll back/forward: the site's own
+   swipes (back, switching career entries) handle those gestures */
+html,
+body {
+  overscroll-behavior: none;
+}
+
 /* phones: the dynamic height leaves out the browser's toolbars */
 #root {
   position: relative;

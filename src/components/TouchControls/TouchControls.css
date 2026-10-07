@@ -1,0 +1,49 @@
+/* P3R-style command pill, real CSS px (outside the Stage), finger-sized */
+.touch-back {
+  position: fixed;
+  z-index: 10001;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  display: none;
+  align-items: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 18px 0 14px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: rgba(11, 8, 32, 0.88);
+  color: #fff;
+  font-family: 'Eurostile Extended', 'Arial Black', sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.06em;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.touch-back:active {
+  background: #e3123b;
+}
+
+.touch-back-arrow {
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-right: 11px solid #e3123b;
+}
+
+.touch-back:active .touch-back-arrow {
+  border-right-color: #fff;
+}
+
+/* touch screens only — keyboards have Esc / Backspace */
+@media (pointer: coarse) {
+  .touch-back {
+    display: inline-flex;
+  }
+}

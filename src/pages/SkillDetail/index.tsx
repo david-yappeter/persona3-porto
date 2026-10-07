@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { EXPERIENCE } from '../../data/experience'
 import { useFitText } from '../../hooks/FitText'
+import { useSwipe } from '../../hooks/Swipe'
 import { playSfx } from '../../utils/sfx'
 import { useSkillContext } from '../SkillLayout'
 import './SkillDetail.css'
@@ -24,18 +25,29 @@ export const SkillDetail = () => {
     else setActive(initial)
   }, [validInitial, initial, navigate, setActive])
 
+  /* next / previous entry: Left/Right, a tap on the L/R badges, or a swipe
+     (left = next, like turning a page) */
+  const step = (by: 1 | -1) => {
+    setActive((active + by + EXPERIENCE.length) % EXPERIENCE.length)
+    playSfx('switchEntry')
+  }
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
       const focused = document.activeElement
       if (focused instanceof HTMLInputElement || focused instanceof HTMLTextAreaElement) return
       e.preventDefault()
-      setActive((active + (e.key === 'ArrowRight' ? 1 : -1) + EXPERIENCE.length) % EXPERIENCE.length)
-      playSfx('switchEntry')
+      step(e.key === 'ArrowRight' ? 1 : -1)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [active, setActive])
+  })
+
+  useSwipe((direction) => {
+    if (direction === 'left') step(1)
+    else if (direction === 'right') step(-1)
+  })
 
   const i = active
   const exp = EXPERIENCE[i]
@@ -47,17 +59,17 @@ export const SkillDetail = () => {
     <>
       <div className="skill-detail">
         <div className="skill-detail-header">
-          <span className="skill-detail-nav">
+          <button type="button" className="skill-detail-nav" onClick={() => step(-1)} aria-label="Previous experience">
             <span className="skill-detail-nav-arrow skill-detail-nav-arrow--left" aria-hidden="true" />
             <span>L</span>
-          </span>
+          </button>
 
           <span className="skill-detail-title">EXPERIENCE</span>
 
-          <span className="skill-detail-nav">
+          <button type="button" className="skill-detail-nav" onClick={() => step(1)} aria-label="Next experience">
             <span>R</span>
             <span className="skill-detail-nav-arrow" aria-hidden="true" />
-          </span>
+          </button>
         </div>
 
         {/* skewed two-tone panel: black category strip on top, white accent

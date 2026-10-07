@@ -1,1 +1,1 @@
-export { useBackNavigation } from './useBackNavigation'
+export { useBackNavigation, useGoBack } from './useBackNavigation'

@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import type GUI from 'lil-gui'
+import { SWIPE_BLOCKED_ATTR } from '../../hooks/Swipe'
 
 /* Mouse camera controls for the labs, editing the config's camera in place
    (so its sliders and the copied JSON follow):
@@ -7,6 +8,8 @@ import type GUI from 'lil-gui'
      world up, up/down over the top)
    - wheel: dolly in / out toward the look-at point
    - space + move, or middle-drag: pan (camera and look-at slide together)
+   and on touch screens:
+   - one-finger drag: orbit; pinch: dolly; two-finger drag: pan
    Anything over the lab panel is left alone. */
 
 export type LabCamera = { pos: THREE.Vector3; target: THREE.Vector3; roll: number; fov: number }
@@ -15,6 +18,8 @@ export type LabCamera = { pos: THREE.Vector3; target: THREE.Vector3; roll: numbe
 const ORBIT_SPEED = 0.006
 /* dolly factor per wheel pixel */
 const ZOOM_SPEED = 0.0015
+/* wheel pixels per pixel of pinch */
+const PINCH_SPEED = 2.5
 const MIN_DISTANCE = 0.1
 const MAX_DISTANCE = 40
 /* keeps the camera off the poles, where looking straight down flips it */
@@ -126,7 +131,49 @@ export const attachLabCamera = (cam: LabCamera, folder: GUI, changed: () => void
     dragging = null
   }
 
+  /* touch: one finger orbits, two pinch to dolly and drag to pan */
+  const touches = new Map<number, { x: number; y: number }>()
+  let pair: { dist: number; x: number; y: number } | null = null
+  const measurePair = () => {
+    const [a, b] = [...touches.values()]
+    return { dist: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+  }
+  const onTouchDown = (e: PointerEvent) => {
+    if (e.pointerType !== 'touch' || overPanel(e) || touches.size >= 2) return
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    pair = touches.size === 2 ? measurePair() : null
+  }
+  const onTouchMove = (e: PointerEvent) => {
+    const prev = touches.get(e.pointerId)
+    if (!prev) return
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (touches.size === 1) {
+      orbit(e.clientX - prev.x, e.clientY - prev.y)
+    } else if (pair) {
+      const now = measurePair()
+      /* fingers apart = closer */
+      dolly((pair.dist - now.dist) * PINCH_SPEED)
+      pan(now.x - pair.x, now.y - pair.y)
+      pair = now
+    }
+    commit()
+  }
+  const onTouchUp = (e: PointerEvent) => {
+    if (!touches.delete(e.pointerId)) return
+    pair = touches.size === 2 ? measurePair() : null
+  }
+  /* the page mustn't scroll / zoom / navigate under the gestures, and the
+     back swipe stands down (the panel, outside #root, still scrolls) */
+  const root = document.getElementById('root')
+  const touchAction = root?.style.touchAction ?? ''
+  if (root) root.style.touchAction = 'none'
+  document.body.setAttribute(SWIPE_BLOCKED_ATTR, '')
+
   window.addEventListener('pointerdown', onPointerDown, true)
+  window.addEventListener('pointerdown', onTouchDown)
+  window.addEventListener('pointermove', onTouchMove)
+  window.addEventListener('pointerup', onTouchUp)
+  window.addEventListener('pointercancel', onTouchUp)
   window.addEventListener('pointermove', onPointerMove)
   window.addEventListener('pointerup', onPointerUp)
   window.addEventListener('wheel', onWheel, { passive: false })
@@ -136,6 +183,12 @@ export const attachLabCamera = (cam: LabCamera, folder: GUI, changed: () => void
   window.addEventListener('blur', onBlur)
   return () => {
     window.removeEventListener('pointerdown', onPointerDown, true)
+    window.removeEventListener('pointerdown', onTouchDown)
+    window.removeEventListener('pointermove', onTouchMove)
+    window.removeEventListener('pointerup', onTouchUp)
+    window.removeEventListener('pointercancel', onTouchUp)
+    if (root) root.style.touchAction = touchAction
+    document.body.removeAttribute(SWIPE_BLOCKED_ATTR)
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerup', onPointerUp)
     window.removeEventListener('wheel', onWheel)
