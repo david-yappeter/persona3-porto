@@ -20,7 +20,9 @@
   left: 56%;
   right: 4%;
   color: #14123a;
-  font-family: Arial, Helvetica, sans-serif;
+  /* Jost (Futura-style, see fonts.css): P3R's geometric italic profile and
+     menu type */
+  font-family: 'Jost', 'Futura', Arial, sans-serif;
   animation: list-detail-panel-in 0.22s ease-out both;
 }
 
@@ -36,18 +38,18 @@
 }
 
 .detail-heading h2 {
-  font-family: 'Eurostile Extended', 'Arial Black', sans-serif;
-  font-weight: 900;
+  /* the social link profile's name: big, light-ish italics */
+  font-weight: 500;
   font-style: italic;
-  font-size: 2.1rem;
-  line-height: 1.1;
-  letter-spacing: 0.01em;
+  font-size: 2.9rem;
+  line-height: 1;
+  letter-spacing: -0.01em;
 }
 
 .detail-heading p {
-  margin-top: 0.35rem;
-  font-size: 1.05rem;
-  font-weight: 700;
+  margin-top: 0.45rem;
+  font-size: 1.2rem;
+  font-weight: 500;
   font-style: italic;
   color: #5a5a72;
 }
@@ -64,19 +66,20 @@
   border-radius: 999px;
   background: #1d1666;
   color: #59d8f2;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 700;
   font-style: italic;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   text-align: center;
 }
 
 .detail-body {
   margin-top: 0.45rem;
   padding-left: 1.2rem;
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1.45;
+  font-size: 1.2rem;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .detail-body ul {
@@ -109,7 +112,9 @@
   padding: 0.15rem 0.7rem;
   background: #14123a;
   color: #fff;
-  font-size: 0.9rem;
+  font-size: 1rem;
+  font-weight: 600;
+  font-style: italic;
   clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%);
 }
 
@@ -121,7 +126,8 @@
 
 .detail-links a {
   color: #1d1666;
-  font-weight: 900;
+  font-size: 1.25rem;
+  font-weight: 700;
   font-style: italic;
   text-decoration: none;
   border-bottom: 2px solid #e3123b;
@@ -133,39 +139,40 @@
 
 .detail-note {
   margin-top: 0.5rem;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 400;
+  font-style: italic;
   color: #5a5a72;
 }
 
 /* BUILD: the detail sits in the band's round window, on the video rather
-   than the white — light, larger, bolder type with a dark lift */
+   than the white — light, a little larger and heavier, with a dark lift */
 .list-detail-panel--on-video {
   color: #fff;
   text-shadow: 0 2px 6px rgba(12, 4, 48, 0.6);
 }
 
 .list-detail-panel--on-video .detail-heading h2 {
-  font-size: 2.7rem;
+  font-size: 3.2rem;
 }
 
 .list-detail-panel--on-video .detail-heading p {
-  font-size: 1.25rem;
-  font-weight: 900;
+  font-size: 1.35rem;
+  font-weight: 600;
   color: #8ff3ff;
 }
 
 .list-detail-panel--on-video .detail-pill {
   background: #fff;
   color: #1d1666;
-  font-size: 0.95rem;
-  font-weight: 900;
+  font-size: 1rem;
+  font-weight: 800;
   text-shadow: none;
 }
 
 .list-detail-panel--on-video .detail-body {
-  font-size: 1.25rem;
-  font-weight: 900;
+  font-size: 1.35rem;
+  font-weight: 600;
 }
 
 .list-detail-panel--on-video .detail-lines li::before {
@@ -173,14 +180,14 @@
 }
 
 .list-detail-panel--on-video .detail-chips li {
-  font-size: 1rem;
-  font-weight: 900;
+  font-size: 1.05rem;
+  font-weight: 700;
   text-shadow: none;
 }
 
 .list-detail-panel--on-video .detail-note {
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 500;
   color: #cfeaff;
 }
 

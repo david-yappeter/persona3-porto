@@ -5,3 +5,21 @@
   font-style: normal;
   font-display: swap;
 }
+
+/* Jost — a free Futura revival (SIL OFL, public/fonts/Jost-OFL.txt), for
+   P3R's geometric italic body and profile type; variable 100-900, latin */
+@font-face {
+  font-family: 'Jost';
+  src: url('/fonts/Jost.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Jost';
+  src: url('/fonts/Jost-Italic.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
