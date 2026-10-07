@@ -27,9 +27,9 @@ export const MENU_ITEMS: MenuEntry[] = [
     alpha: 0.98,
     to: '/careers',
   },
-  { label: 'BUILD', indent: 0.3, scale: 1.02, rot: -11, skew: -18, tint: '#3ccfec', alpha: 1 },
-  { label: 'STUDY', indent: 0.4, scale: 1.0, rot: -6, skew: -22, tint: '#58e6fb', alpha: 0.93 },
-  { label: 'ABOUT', indent: 0.0, scale: 1.06, rot: -9, skew: -19, tint: '#35c6e4', alpha: 1 },
-  { label: 'LINKS', indent: 0.6, scale: 0.98, rot: -13, skew: -21, tint: '#4adcf6', alpha: 0.96 },
+  { label: 'BUILD', indent: 0.3, scale: 1.02, rot: -11, skew: -18, tint: '#3ccfec', alpha: 1, to: '/builds' },
+  { label: 'STUDY', indent: 0.4, scale: 1.0, rot: -6, skew: -22, tint: '#58e6fb', alpha: 0.93, to: '/study' },
+  { label: 'ABOUT', indent: 0.0, scale: 1.06, rot: -9, skew: -19, tint: '#35c6e4', alpha: 1, to: '/about' },
+  { label: 'LINKS', indent: 0.6, scale: 0.98, rot: -13, skew: -21, tint: '#4adcf6', alpha: 0.96, to: '/links' },
   { label: 'CREDITS', indent: 0.3, scale: 0.98, rot: -7, skew: -20, tint: '#2fbcd9', alpha: 1, to: '/credits' },
 ]

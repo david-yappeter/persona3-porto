@@ -1,7 +1,11 @@
 import { createBrowserRouter } from 'react-router'
 import { RootLayout } from './layouts/RootLayout'
 import { MainMenu } from './pages/MainMenu'
+import { About } from './pages/About'
+import { Builds } from './pages/Builds'
+import { Links } from './pages/Links'
 import { Skill } from './pages/Skill'
+import { Study } from './pages/Study'
 
 export const router = createBrowserRouter(
   [
@@ -24,6 +28,10 @@ export const router = createBrowserRouter(
             },
           ],
         },
+        { path: 'builds', Component: Builds },
+        { path: 'study', Component: Study },
+        { path: 'about', Component: About },
+        { path: 'links', Component: Links },
         { path: 'credits', lazy: () => import('./pages/Credits').then((m) => ({ Component: m.Credits })) },
         /* dev-only figure lab: the character alone with a slider panel */
         ...(import.meta.env.DEV

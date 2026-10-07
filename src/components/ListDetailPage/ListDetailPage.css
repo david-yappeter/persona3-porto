@@ -1,0 +1,187 @@
+/* stacking over MenuBackground's absolute layers: band, then the page
+   name on it, then the list and the detail */
+.list-detail-band {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: #fff;
+  clip-path: polygon(53% 0, 100% 0, 100% 100%, 36% 100%);
+  pointer-events: none;
+  animation: list-detail-band-in 0.3s ease-out both;
+}
+
+@keyframes list-detail-band-in {
+  from {
+    transform: translateX(6%);
+    opacity: 0;
+  }
+}
+
+/* huge grey page name along the bottom edge, like the equip menu's "EQUIP"
+   (and /credits' CREDITS) */
+.list-detail-title {
+  position: absolute;
+  z-index: 1;
+  left: calc(4 * var(--vw));
+  bottom: calc(-6.5 * var(--vh));
+  font-family: 'Eurostile Extended', 'Arial Black', sans-serif;
+  font-weight: 900;
+  font-size: calc(30 * var(--vh));
+  line-height: 1;
+  letter-spacing: 5px;
+  color: #a9a9ad;
+  white-space: nowrap;
+  transform: skewX(-12deg) scaleX(0.72);
+  transform-origin: left bottom;
+  pointer-events: none;
+  user-select: none;
+}
+
+.list-detail-list {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  padding: 2rem;
+  padding-top: 7rem;
+}
+
+.list-detail-list .basic-row {
+  max-width: min(640px, 44vw);
+}
+
+/* the selected row's detail, on the band */
+.list-detail-panel {
+  position: absolute;
+  z-index: 2;
+  top: calc(13 * var(--vh));
+  left: 56%;
+  right: 4%;
+  color: #14123a;
+  font-family: Arial, Helvetica, sans-serif;
+  animation: list-detail-panel-in 0.22s ease-out both;
+}
+
+@keyframes list-detail-panel-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+}
+
+.detail-heading {
+  margin-bottom: 1.4rem;
+}
+
+.detail-heading h2 {
+  font-family: 'Eurostile Extended', 'Arial Black', sans-serif;
+  font-weight: 900;
+  font-style: italic;
+  font-size: 2.1rem;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+
+.detail-heading p {
+  margin-top: 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-style: italic;
+  color: #5a5a72;
+}
+
+.detail-section {
+  margin-bottom: 1.1rem;
+}
+
+/* navy pill with the label in italic cyan, slanted ends */
+.detail-pill {
+  display: inline-block;
+  min-width: 11rem;
+  padding: 0.18rem 1.2rem;
+  border-radius: 999px;
+  background: #1d1666;
+  color: #59d8f2;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.detail-body {
+  margin-top: 0.45rem;
+  padding-left: 1.2rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.detail-body ul {
+  list-style: none;
+}
+
+/* bullet lines: a small magenta triangle, like the detail page's */
+.detail-lines li {
+  position: relative;
+  padding-left: 1.1rem;
+}
+
+.detail-lines li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  border-left: 0.55em solid #e3123b;
+  border-top: 0.3em solid transparent;
+  border-bottom: 0.3em solid transparent;
+}
+
+.detail-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.detail-chips li {
+  padding: 0.15rem 0.7rem;
+  background: #14123a;
+  color: #fff;
+  font-size: 0.9rem;
+  clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%);
+}
+
+.detail-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.4rem;
+}
+
+.detail-links a {
+  color: #1d1666;
+  font-weight: 900;
+  font-style: italic;
+  text-decoration: none;
+  border-bottom: 2px solid #e3123b;
+}
+
+.detail-links a:hover {
+  color: #e3123b;
+}
+
+.detail-note {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #5a5a72;
+}
+
+.detail-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 1rem;
+}
+
+.detail-facts dt {
+  color: #5a5a72;
+  font-style: italic;
+}
