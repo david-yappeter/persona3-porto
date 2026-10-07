@@ -5,8 +5,6 @@ type MenuBackgroundProps = {
   videoSrc?: string
   /** oversized letters bleeding off the left edge */
   decoText?: string
-
-  flip?: boolean
   /** plays once, non-looping; once it ends this swaps to the normal looping
       videoSrc. Omit for a plain loop from the start. */
   entranceSrc?: string
@@ -15,11 +13,8 @@ type MenuBackgroundProps = {
 export const MenuBackground = ({
   videoSrc = `${import.meta.env.BASE_URL}assets/persona_3_menu_bg.mp4`,
   decoText = '',
-  flip = false,
   entranceSrc,
 }: MenuBackgroundProps) => {
-  if (flip) videoSrc = `${import.meta.env.BASE_URL}assets/persona_3_menu_bg_flip.mp4`
-
   const videoRef = useRef<HTMLVideoElement>(null)
   const [showEntrance, setShowEntrance] = useState(!!entranceSrc)
 

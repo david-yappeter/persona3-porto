@@ -43,8 +43,7 @@ const EXPERIENCE_IMAGES = [
  * videos, every sfx in utils/sfx.ts, the first music track, the font, the
  * /careers 3D character with its three.js code, and the experience images.
  * Deliberately excludes the other three music tracks (9MB combined), which
- * load on demand, and files nothing references (protagonist.glb, the flip
- * video, head_0*.png, the unused deck_ui_* sounds).
+ * load on demand.
  */
 export const PRELOAD_MANIFEST: PreloadAsset[] = [
   { url: asset('assets/persona_3_menu_bg.mp4'), kind: 'fetch' },
