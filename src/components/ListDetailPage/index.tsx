@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 import { BasicRow } from '../BasicRow'
+import { FallingFigure } from '../FallingFigure'
 import { MenuBackground } from '../MenuBackground'
 import { useMenuNavigation } from '../../hooks/MenuNavigation'
 import { playSfx } from '../../utils/sfx'
@@ -38,7 +39,9 @@ type ListDetailPageProps = {
 /**
  * P3R equip-menu layout shared by BUILD / STUDY / LINKS: BasicRow list down
  * the left (arrows / hover move the cursor), the selected row's detail on a
- * white diagonal band to the right, the page name in huge grey type.
+ * white diagonal band to the right with the page name in huge grey type
+ * on it, and Makoto falling through (band and name are drawn with him, by
+ * FallingFigure).
  */
 export const ListDetailPage = ({ title, entries, openOnClick = false }: ListDetailPageProps) => {
   const { selected, moveTo } = useMenuNavigation(entries.length)
@@ -59,10 +62,7 @@ export const ListDetailPage = ({ title, entries, openOnClick = false }: ListDeta
   return (
     <>
       <MenuBackground videoSrc={OCEAN_BG} />
-      <div className="list-detail-band" aria-hidden="true" />
-      <div className="list-detail-title" aria-hidden="true">
-        {title}
-      </div>
+      <FallingFigure title={title} />
       <div className="list-detail-list">
         {entries.map((entry, i) => (
           <BasicRow

@@ -1,5 +1,6 @@
 import { DEFAULT_POSE, LAB, POSE } from './pose'
 import { BODY_AXES, R, WORLD_AXES, createLabPanel, freeArm, look, vector } from './labGui'
+import { attachLabCamera } from './labCamera'
 
 /* slider panel over the live scene (`/careers/0?lab`): every change
    writes straight into POSE, survives reloads via localStorage, and "Copy
@@ -12,13 +13,14 @@ export const mountPoseLab = () => {
   const gui = createLabPanel('Pose lab', STORAGE_KEY, POSE, DEFAULT_POSE)
   gui.add(LAB, 'noParallax').name('freeze mouse sway (lab only)')
 
-  const cam = gui.addFolder('Camera')
+  const cam = gui.addFolder('Camera (right-drag orbit · wheel zoom · space / middle-drag pan)')
   vector(cam, POSE.camera.pos, 'position', [R(-1, 1), R(0.5, 2.5), R(0.2, 3)], WORLD_AXES)
   vector(cam, POSE.camera.target, 'look at', [R(-1, 1), R(0.5, 2), R(-1, 1)], WORLD_AXES)
   cam.add(POSE.camera, 'roll', -30, 30, 0.1).name('roll (°)')
   cam.add(POSE.camera, 'fov', 10, 60, 0.5).name('fov (zoom)')
   cam.add(POSE.camera, 'parallaxX', 0, 0.15, 0.005).name('mouse sway x')
   cam.add(POSE.camera, 'parallaxY', 0, 0.15, 0.005).name('mouse sway y')
+  const detachCamera = attachLabCamera(POSE.camera, cam, gui.persist)
 
   const body = gui.addFolder('Body')
   body.add(POSE.body, 'turn', -60, 60, 0.5).name('turn (°)')
@@ -132,6 +134,7 @@ export const mountPoseLab = () => {
   return () => {
     LAB.noParallax = false
     LAB.forceState = ''
+    detachCamera()
     gui.destroy()
   }
 }

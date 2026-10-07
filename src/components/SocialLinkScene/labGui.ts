@@ -116,5 +116,6 @@ export const createLabPanel = (title: string, storageKey: string, target: Record
   gui.add(actions, 'reset').name('Reset to default')
   /* fires for every controller in the panel and its folders */
   gui.onChange(save)
-  return gui
+  /* for edits made outside the sliders (labCamera.ts) */
+  return Object.assign(gui, { persist: save })
 }

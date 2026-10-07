@@ -1,5 +1,6 @@
 import { DEFAULT_FIGURE, FIGURE, FIGURE_LAB } from './figure'
 import { R, WORLD_AXES, createLabPanel, freeArm, look, vector, type Range } from './labGui'
+import { attachLabCamera } from './labCamera'
 import type { AccessoryMotion } from './wind'
 
 /* slider panel for the figure lab (`/figure-lab`, `/credits?lab`): the character
@@ -13,11 +14,12 @@ export const mountFigureLab = () => {
   gui.add(FIGURE_LAB, 'pause').name('pause float + cloth (lab only)')
   gui.add(FIGURE_LAB, 'solid').name('no see-through (lab only)')
 
-  const cam = gui.addFolder('Camera').close()
+  const cam = gui.addFolder('Camera (right-drag orbit · wheel zoom · space / middle-drag pan)').close()
   vector(cam, FIGURE.camera.pos, 'position', [R(-3, 3), R(-1, 3), R(0.3, 6)], WORLD_AXES)
   vector(cam, FIGURE.camera.target, 'look at', [R(-2, 2), R(-1, 2.5), R(-2, 2)], WORLD_AXES)
   cam.add(FIGURE.camera, 'roll', -180, 180, 0.5).name('roll (°)')
   cam.add(FIGURE.camera, 'fov', 5, 80, 0.5).name('fov (zoom)')
+  const detachCamera = attachLabCamera(FIGURE.camera, cam, gui.persist)
 
   const body = gui.addFolder('Body orientation')
   body.add(FIGURE.body, 'turn', -180, 180, 0.5).name('turn (° + his left)')
@@ -31,6 +33,15 @@ export const mountFigureLab = () => {
   float.add(FIGURE.float, 'distance', 0, 0.3, 0.002).name('drift distance (m)')
   float.add(FIGURE.float, 'speed', 0, 2, 0.01).name('drift speed (/s)')
   float.add(FIGURE.float, 'sway', 0, 20, 0.1).name('wobble (°)')
+
+  const fall = gui.addFolder('Falling loop (top to bottom of the screen)')
+  fall.add(FIGURE.fall, 'on').name('on (off to pose him in place)')
+  fall.add(FIGURE.fall, 'duration', 1, 30, 0.1).name('fall time (s)')
+  fall.add(FIGURE.fall, 'gap', 0, 10, 0.1).name('pause below before next (s)')
+  fall.add(FIGURE.fall, 'margin', 0, 4, 0.05).name('starts / ends past edge (m)')
+  fall.add(FIGURE.fall, 'drift', 0, 1.5, 0.01).name('side drift (m)')
+  fall.add(FIGURE.fall, 'swings', 0, 5, 0.05).name('drift swings per fall')
+  fall.add(FIGURE.fall, 'tumble', -180, 180, 0.5).name('turn over the fall (°)')
 
   const gravity = gui.addFolder('Gravity (hair / cloth / accessories)')
   vector(gravity, FIGURE.gravity.direction, 'pulls toward', [R(-1, 1), R(-1, 1), R(-1, 1)], WORLD_AXES, 0.05)
@@ -106,6 +117,21 @@ export const mountFigureLab = () => {
   shadow.add(FIGURE.shadow, 'x', -0.3, 0.3, 0.002).name('offset x (+ right)')
   shadow.add(FIGURE.shadow, 'y', -0.3, 0.3, 0.002).name('offset y (+ down)')
 
+  const digit = gui.addFolder('The "9" he grabs')
+  digit.add(FIGURE.digit, 'show').name('show')
+  digit.add(FIGURE.digit, 'hold', { 'his right hand': 'right', 'his left hand': 'left', 'nobody (floats free)': 'none' }).name('held by')
+  digit.add(FIGURE.digit, 'size', 0.1, 1.5, 0.01).name('height (m)')
+  digit.add(FIGURE.digit, 'depth', 0.02, 0.5, 0.005).name('thickness (× height)')
+  digit.add(FIGURE.digit.grip, 'x', 0, 1, 0.01).name('grip point x (0 left, 1 right)')
+  digit.add(FIGURE.digit.grip, 'y', 0, 1, 0.01).name('grip point y (0 foot, 1 top)')
+  vector(digit, FIGURE.digit.offset, 'offset from wrist (hand axes)', [R(-0.3, 0.3), R(-0.3, 0.3), R(-0.3, 0.3)], ['x', 'y', 'z'], 0.002)
+  digit.add(FIGURE.digit, 'pitch', -180, 180, 0.5).name('pitch (°)')
+  digit.add(FIGURE.digit, 'yaw', -180, 180, 0.5).name('yaw (°)')
+  digit.add(FIGURE.digit, 'roll', -180, 180, 0.5).name('roll (°)')
+  vector(digit, FIGURE.digit.pos, 'free: position', [R(-2, 2), R(-1, 3), R(-2, 2)], WORLD_AXES).close()
+  digit.add(FIGURE.digit, 'spin', -180, 180, 1).name('free: tumble (°/s)')
+  digit.addColor(FIGURE.digit, 'color').name('colour')
+
   const accessories = gui.addFolder('Ribbon / cord / earphone movement')
   const accessory = (name: string, a: AccessoryMotion) => {
     const folder = accessories.addFolder(name)
@@ -131,6 +157,7 @@ export const mountFigureLab = () => {
   return () => {
     FIGURE_LAB.pause = false
     FIGURE_LAB.solid = false
+    detachCamera()
     gui.destroy()
   }
 }

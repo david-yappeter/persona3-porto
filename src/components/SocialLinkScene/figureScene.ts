@@ -1,7 +1,8 @@
 import * as THREE from 'three'
 import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js'
 import { loadCharacter, type ArmChain, type CharacterRig, type HandRig, type TextureBorrow } from './character'
-import { createBand, writeBandStencil } from './band'
+import { createBand, writeBandStencil, type BandShape } from './band'
+import { createDigit } from './digit'
 import { createScreenText } from './screenText'
 import { FIGURE, FIGURE_LAB } from './figure'
 import { solveTwoBoneIK } from './ik'
@@ -24,6 +25,12 @@ export type FigureSceneOptions = {
   /** the big white band behind him (FIGURE.band), cut out wherever he's
       drawn and catching his shadow (FIGURE.shadow) */
   band?: boolean
+  /** band only: a fixed shape instead of FIGURE.band (the page's own) */
+  bandShape?: BandShape
+  /** band only: slides it in once he's loaded, as a page's band does on
+      arrival — unless the previous scene's last frame is covering, which
+      already shows one */
+  bandIn?: boolean
   /** band only: huge menu-name type on the band, behind him (FIGURE.title) */
   title?: string
 }
@@ -41,6 +48,9 @@ type Leg = { lift: number; spread: number; twist: number; knee: number }
    ghost copy, which would otherwise pop in empty (same as scene.ts) */
 let handoff: { frame: HTMLCanvasElement; at: number } | null = null
 const HANDOFF_TTL = 1000
+/* the fall loop's clock (FIGURE.fall), kept across mounts so moving to
+   another page with him on it carries on mid-fall instead of restarting */
+let fallT = 0
 
 export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions) => {
   const width = Math.max(mount.clientWidth, 1)
@@ -58,7 +68,8 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
     taken.frame.className = 'social-link-scene-handoff'
     mount.appendChild(taken.frame)
   }
-  const band = options.band ? createBand(true) : null
+  const slideIn = !!options.bandIn && !taken
+  const band = options.band ? createBand(!slideIn) : null
   const title = band && options.title ? createScreenText(options.title) : null
   const drawTitle = () => title?.render(renderer, FIGURE.title)
   const effect = new OutlineEffect(renderer, { defaultThickness: 0.0045, defaultColor: PALETTE.outline })
@@ -87,6 +98,10 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
   const bodyQ = new THREE.Quaternion()
 
   const gradient = createToonGradient()
+  const digit = createDigit()
+  digit.group.visible = false
+  scene.add(digit.group)
+  if (band) digit.materials.forEach(writeBandStencil)
   let rig: CharacterRig | null = null
   const outlined: { material: THREE.Material; bright: boolean }[] = []
   let disposed = false
@@ -105,6 +120,7 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
     }
     ready = true
     taken?.frame.remove()
+    if (slideIn) band?.setShown(true)
     if (!loaded) return
     rig = loaded
     feet.add(rig.root)
@@ -119,6 +135,7 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
         outlined.push({ material, bright: !!options.brightMaterials?.test(material.name) })
       }
     })
+    for (const material of digit.materials) outlined.push({ material, bright: true })
   })
 
   /* scratch */
@@ -142,6 +159,11 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
   const Z = new THREE.Vector3(0, 0, 1)
   const bodyEuler = new THREE.Euler(0, 0, 0, 'YXZ')
   const drift = new THREE.Vector3()
+  const screenUp = new THREE.Vector3()
+  const screenRight = new THREE.Vector3()
+  const screenIn = new THREE.Vector3()
+  const toBody = new THREE.Vector3()
+  const tumbleQ = new THREE.Quaternion()
   const shadeLight = new THREE.Vector3()
   const gravityDir = new THREE.Vector3()
   const motion: Motion = {
@@ -197,6 +219,7 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
     last = now
     const motionDt = FIGURE_LAB.pause ? 0 : dt
     floatT += motionDt
+    fallT += motionDt
 
     const ov = POSE.overlay
     grade.setOverlay(FIGURE_LAB.solid ? { ...ov, enabled: false } : ov)
@@ -228,6 +251,22 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
     drift.copy(fl.direction)
     if (drift.lengthSq() > 1e-8) drift.normalize()
     body.position.copy(b.pos).addScaledVector(drift, Math.sin(phase) * fl.distance)
+    const fa = FIGURE.fall
+    if (fa.on && fa.duration > 0) {
+      /* top to bottom of the frame at his depth: half its height there,
+         plus the margin that takes the whole body out of sight */
+      screenUp.set(0, 1, 0).applyQuaternion(camera.quaternion)
+      screenRight.set(1, 0, 0).applyQuaternion(camera.quaternion)
+      camera.getWorldDirection(screenIn)
+      const depth = Math.max(screenIn.dot(toBody.subVectors(b.pos, camera.position)), 0.1)
+      const reach = depth * Math.tan(deg(camera.fov) / 2) + fa.margin
+      const p = Math.min((fallT % (fa.duration + Math.max(fa.gap, 0))) / fa.duration, 1)
+      body.position
+        .addScaledVector(screenUp, reach * (1 - 2 * p))
+        .addScaledVector(screenRight, Math.sin(p * Math.PI * 2 * fa.swings) * fa.drift)
+      body.quaternion.premultiply(tumbleQ.setFromAxisAngle(screenIn, -deg(fa.tumble) * (p - 0.5)))
+      bodyQ.copy(body.quaternion)
+    }
     feet.position.set(0, -b.pivot, 0)
 
     if (rig) {
@@ -255,9 +294,11 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
       gravityDir.copy(FIGURE.gravity.direction)
       motion.gravity!.strength = FIGURE.gravity.strength
       rig.postUpdate(motionDt, motion)
+      const d = FIGURE.digit
+      digit.update(motionDt, d, d.hold === 'right' ? rig.otherArm.hand : d.hold === 'left' ? rig.cardArm.hand : null)
     }
 
-    band?.update(dt, FIGURE.band)
+    band?.update(dt, options.bandShape ?? FIGURE.band)
     renderFrame()
   }
   const renderFrame = () => {
@@ -299,6 +340,7 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
     resize.disconnect()
     band?.dispose()
     title?.dispose()
+    digit.dispose()
     rig?.dispose()
     gradient.dispose()
     renderer.dispose()

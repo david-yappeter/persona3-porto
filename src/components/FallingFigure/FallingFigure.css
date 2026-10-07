@@ -1,0 +1,4 @@
+/* above MenuBackground's layers, under the page's list / panel (z-index 2) */
+.falling-figure {
+  z-index: 1;
+}

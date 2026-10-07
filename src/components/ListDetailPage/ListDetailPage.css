@@ -1,42 +1,5 @@
-/* stacking over MenuBackground's absolute layers: band, then the page
-   name on it, then the list and the detail */
-.list-detail-band {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: #fff;
-  clip-path: polygon(53% 0, 100% 0, 100% 100%, 36% 100%);
-  pointer-events: none;
-  animation: list-detail-band-in 0.3s ease-out both;
-}
-
-@keyframes list-detail-band-in {
-  from {
-    transform: translateX(6%);
-    opacity: 0;
-  }
-}
-
-/* huge grey page name along the bottom edge, like the equip menu's "EQUIP"
-   (and /credits' CREDITS) */
-.list-detail-title {
-  position: absolute;
-  z-index: 1;
-  left: calc(4 * var(--vw));
-  bottom: calc(-6.5 * var(--vh));
-  font-family: 'Eurostile Extended', 'Arial Black', sans-serif;
-  font-weight: 900;
-  font-size: calc(30 * var(--vh));
-  line-height: 1;
-  letter-spacing: 5px;
-  color: #a9a9ad;
-  white-space: nowrap;
-  transform: skewX(-12deg) scaleX(0.72);
-  transform-origin: left bottom;
-  pointer-events: none;
-  user-select: none;
-}
-
+/* the band and the page name are drawn in FallingFigure's canvas (z-index
+   1), so he falls in front of them; the list and the detail sit above it */
 .list-detail-list {
   position: relative;
   z-index: 2;

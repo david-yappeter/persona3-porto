@@ -1,3 +1,4 @@
+import { FallingFigure } from '../../components/FallingFigure'
 import { DetailChips, DetailHeading, DetailSection } from '../../components/ListDetailPage'
 import { MenuBackground } from '../../components/MenuBackground'
 import { PROFILE } from '../../data/profile'
@@ -11,10 +12,7 @@ const OCEAN_BG = `${import.meta.env.BASE_URL}assets/persona_3_menu_bg_ocean_seam
 export const About = () => (
   <>
     <MenuBackground videoSrc={OCEAN_BG} />
-    <div className="list-detail-band" aria-hidden="true" />
-    <div className="list-detail-title" aria-hidden="true">
-      ABOUT
-    </div>
+    <FallingFigure title="ABOUT" />
 
     <div className="about-status">
       <div className="about-plate">
