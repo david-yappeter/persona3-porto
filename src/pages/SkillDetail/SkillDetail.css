@@ -195,7 +195,7 @@
   color: #5a5a5a;
 }
 
-/* --- body: description + portrait slot + name/role --- */
+/* --- body: the description lines --- */
 .skill-detail-body {
   position: relative;
   flex: 1;
@@ -257,54 +257,84 @@
   }
 }
 
-/* placeholder for the character art — intentionally empty, see feature
-   request; sized/positioned to roughly match where the source UI's portrait
-   sits so swapping in a real image later is a drop-in */
-.skill-detail-portrait,
-.skill-detail-portrait-img {
+/* --- the entry's social-link bust-up (P3R's camp Commu art) over the band.
+   Each file is a 2048² canvas with the character in its lower-right
+   ~half, so it's drawn far taller than the screen, anchored to the bottom
+   right, leaving the character about two thirds of the screen tall */
+.skill-detail-bustup {
   position: absolute;
-  right: 4%;
+  z-index: 1;
+  right: 0;
   bottom: 0;
-  width: min(42%, 420px);
-  height: 85%;
+  height: calc(140 * var(--vh));
+  width: auto;
+  pointer-events: none;
+  user-select: none;
+  animation: skill-detail-bustup-in 0.4s ease-out both;
 }
 
-/* drop-in for the placeholder box once an entry has a real cropped
-   portrait — see data/experience.ts's portraitSrc */
-.skill-detail-portrait-img {
-  object-fit: contain;
-  object-position: bottom;
-  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5));
+@keyframes skill-detail-bustup-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(4 * var(--vw)));
+  }
 }
 
-.skill-detail-portrait {
-  border: 1px dashed rgba(255, 255, 255, 0.35);
-  background: rgba(0, 0, 0, 0.15);
-}
-
-.skill-detail-person {
+/* --- name + description box across the bust-up's chest, like the social
+   link's profile: dark violet plate, the name in big cyan italics riding
+   its top edge, white description under it */
+.skill-detail-about {
   position: absolute;
-  right: 4%;
-  bottom: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  text-align: right;
-  gap: 0.15em;
-  max-width: 40%;
+  z-index: 2;
+  right: calc(3 * var(--vw));
+  bottom: calc(6.5 * var(--vh));
+  width: calc(34 * var(--vw));
+  padding: 2.4rem 1.8rem 1.2rem 2rem;
+  animation: skill-detail-about-in 0.35s ease-out 0.1s both;
 }
 
-.skill-detail-person-name {
-  font-size: 2rem;
-  font-weight: 900;
-  font-style: italic;
-  color: #9fe8ff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+/* the plate on its own layer, so its slanted cut doesn't clip the name */
+.skill-detail-about::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg, rgba(24, 12, 78, 0.92), rgba(58, 30, 150, 0.84));
+  clip-path: polygon(2.5% 0, 100% 0, 97.5% 100%, 0 100%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
-.skill-detail-person-role {
+.skill-detail-about-name {
+  position: absolute;
+  left: 1.6rem;
+  top: 0;
+  transform: translateY(-55%);
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 1rem;
-  color: #eef6fb;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  font-size: 2.9rem;
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: #4ff0ff;
+  white-space: nowrap;
+  /* dark rim so it reads where it crosses the band */
+  text-shadow:
+    0 0 2px #120a3c,
+    0 0 2px #120a3c,
+    0 3px 8px rgba(0, 0, 0, 0.45);
+}
+
+.skill-detail-about-text {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1.2rem;
+  line-height: 1.35;
+  color: #fff;
+}
+
+@keyframes skill-detail-about-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
 }

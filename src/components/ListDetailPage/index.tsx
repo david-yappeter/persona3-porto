@@ -34,6 +34,9 @@ type ListDetailPageProps = {
   entries: ListEntry[]
   /** a click opens the row's url instead of just selecting it */
   openOnClick?: boolean
+  /** the band as a round window onto the video round the list, with this
+      wrapped round it instead of `title` (BUILD's "PROJECTS") */
+  ring?: string
 }
 
 /**
@@ -43,7 +46,7 @@ type ListDetailPageProps = {
  * on it, and Makoto falling through (band and name are drawn with him, by
  * FallingFigure).
  */
-export const ListDetailPage = ({ title, entries, openOnClick = false }: ListDetailPageProps) => {
+export const ListDetailPage = ({ title, entries, openOnClick = false, ring }: ListDetailPageProps) => {
   const { selected, moveTo } = useMenuNavigation(entries.length)
   const current = entries[selected]
 
@@ -62,7 +65,7 @@ export const ListDetailPage = ({ title, entries, openOnClick = false }: ListDeta
   return (
     <>
       <MenuBackground videoSrc={OCEAN_BG} />
-      <FallingFigure title={title} />
+      <FallingFigure title={title} ring={ring} />
       <div className="list-detail-list">
         {entries.map((entry, i) => (
           <BasicRow
@@ -79,7 +82,7 @@ export const ListDetailPage = ({ title, entries, openOnClick = false }: ListDeta
         ))}
       </div>
       {/* keyed so each entry's detail slides in fresh */}
-      <div className="list-detail-panel" key={current.key}>
+      <div className={`list-detail-panel${ring ? ' list-detail-panel--on-video' : ''}`} key={current.key}>
         {current.detail}
       </div>
     </>

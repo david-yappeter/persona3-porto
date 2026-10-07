@@ -148,3 +148,58 @@
   color: #5a5a72;
   font-style: italic;
 }
+
+/* BUILD: the detail sits in the band's round window, on the video rather
+   than the white — light, larger, bolder type with a dark lift */
+.list-detail-panel--on-video {
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(12, 4, 48, 0.6);
+}
+
+.list-detail-panel--on-video .detail-heading h2 {
+  font-size: 2.7rem;
+}
+
+.list-detail-panel--on-video .detail-heading p {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #8ff3ff;
+}
+
+.list-detail-panel--on-video .detail-pill {
+  background: #fff;
+  color: #1d1666;
+  font-size: 0.95rem;
+  font-weight: 900;
+  text-shadow: none;
+}
+
+.list-detail-panel--on-video .detail-body {
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.list-detail-panel--on-video .detail-lines li::before {
+  border-left-color: #ff3d6a;
+}
+
+.list-detail-panel--on-video .detail-chips li {
+  font-size: 1rem;
+  font-weight: 900;
+  text-shadow: none;
+}
+
+.list-detail-panel--on-video .detail-note {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #cfeaff;
+}
+
+.list-detail-panel--on-video .detail-links a {
+  color: #fff;
+  border-bottom-color: #59d8f2;
+}
+
+.list-detail-panel--on-video .detail-links a:hover {
+  color: #59d8f2;
+}

@@ -30,5 +30,6 @@ const ENTRIES: ListEntry[] = PROJECTS.map((p) => ({
   ),
 }))
 
-/** BUILD: the CV's notable projects */
-export const Builds = () => <ListDetailPage title="BUILD" entries={ENTRIES} />
+/** BUILD: the CV's notable projects, the list in a round window onto the
+    video with "PROJECTS" round it, like the system menu */
+export const Builds = () => <ListDetailPage title="BUILD" ring="PROJECTS" entries={ENTRIES} />

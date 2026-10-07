@@ -88,19 +88,15 @@ export const SkillDetail = () => {
               </li>
             ))}
           </ul>
+        </div>
 
-          {/* character art slot — empty dashed placeholder until an entry
-              has its own cropped portrait, see data/experience.ts */}
-          {exp.portraitSrc ? (
-            <img className="skill-detail-portrait-img" src={exp.portraitSrc} alt="" aria-hidden="true" />
-          ) : (
-            <div className="skill-detail-portrait" aria-hidden="true" />
-          )}
-
-          <div className="skill-detail-person">
-            <span className="skill-detail-person-name">Placeholder Name</span>
-            <span className="skill-detail-person-role">Placeholder role description goes here.</span>
-          </div>
+        {/* the entry's social-link bust-up over the band, and the name +
+            description box across its chest; keyed so both replay on
+            every Left/Right cycle */}
+        <img className="skill-detail-bustup" key={`bustup-${i}`} src={exp.bustupSrc} alt="" aria-hidden="true" />
+        <div className="skill-detail-about" key={`about-${i}`}>
+          <span className="skill-detail-about-name">{exp.about.name}</span>
+          <p className="skill-detail-about-text">{exp.about.text}</p>
         </div>
       </div>
     </>

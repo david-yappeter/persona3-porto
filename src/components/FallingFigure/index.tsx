@@ -16,7 +16,14 @@ const PAGE_BAND = { bottom: 2, width: 1.64, lean: 0.17 }
  * the page's list / panel. three.js and the model only download once the
  * page mounts; `?lab` adds the figure lab panel.
  */
-export const FallingFigure = ({ title }: { title: string }) => {
+type FallingFigureProps = {
+  title: string
+  /** a round window in a full-screen band instead of the strip, with this
+      wrapped round it in place of `title` (FIGURE.circle) */
+  ring?: string
+}
+
+export const FallingFigure = ({ title, ring }: FallingFigureProps) => {
   const mountRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -38,6 +45,7 @@ export const FallingFigure = ({ title }: { title: string }) => {
         bandShape: PAGE_BAND,
         bandIn: true,
         title,
+        ring,
       })
     })
     if (new URLSearchParams(window.location.search).has('lab')) {
@@ -50,7 +58,7 @@ export const FallingFigure = ({ title }: { title: string }) => {
       disposeLab?.()
       disposeScene?.()
     }
-  }, [title])
+  }, [title, ring])
 
   return <div ref={mountRef} className="social-link-scene falling-figure" aria-hidden="true" />
 }

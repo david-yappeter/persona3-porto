@@ -7,6 +7,14 @@ import * as THREE from 'three'
 
 export type BandShape = { bottom: number; width: number; lean: number }
 
+/** a round window cut out of the band, the page's video showing through:
+    centre in screen fractions (x from the left, y from the top), radius
+    as a fraction of the screen height (the vertical one, for an oval) —
+    with one the band fills the whole screen around it instead of running
+    as a strip. stretch: width over height (1 = circle, 2 = twice as wide);
+    tilt: degrees, + = clockwise */
+export type BandHole = { x: number; y: number; radius: number; stretch: number; tilt: number }
+
 /** the character's flat silhouette cast on the band (POSE.shadow) */
 export type BandShadow = { strength: number; color: string; x: number; y: number }
 
@@ -37,7 +45,13 @@ export const createBand = (initiallyShown: boolean) => {
   geometry.setAttribute('position', positions)
   geometry.setIndex([0, 1, 2, 0, 2, 3])
   /* corners: lower edge at both reaches, then upper edge back */
-  const layout = ({ bottom, width, lean }: BandShape) => {
+  const layout = ({ bottom, width, lean }: BandShape, hole: BandHole | null) => {
+    if (hole) {
+      /* the whole screen, the window cut in the fragment shader */
+      ;[[-1, 1], [-1, -1], [1, -1], [1, 1]].forEach(([x, y], i) => positions.setXYZ(i, x, y, 0))
+      positions.needsUpdate = true
+      return
+    }
     const corners = [
       [0, REACH[1]],
       [0, REACH[0]],
@@ -51,7 +65,15 @@ export const createBand = (initiallyShown: boolean) => {
     })
     positions.needsUpdate = true
   }
-  const uniforms = { uOpacity: { value: 1 }, uOffset: { value: new THREE.Vector2() } }
+  const uniforms = {
+    uOpacity: { value: 1 },
+    uOffset: { value: new THREE.Vector2() },
+    /* x, y, radius (see BandHole); radius 0 = no window */
+    uHole: { value: new THREE.Vector3() },
+    /* stretch, tilt (radians) */
+    uHoleShape: { value: new THREE.Vector2(1, 0) },
+    uResolution: { value: new THREE.Vector2(1, 1) },
+  }
   const material = new THREE.ShaderMaterial({
     uniforms,
     vertexShader: /* glsl */ `
@@ -61,7 +83,28 @@ export const createBand = (initiallyShown: boolean) => {
     /* premultiplied white, written over the cleared (transparent) pixels */
     fragmentShader: /* glsl */ `
       uniform float uOpacity;
-      void main() { gl_FragColor = vec4(vec3(uOpacity), uOpacity); }
+      uniform vec3 uHole;
+      uniform vec2 uHoleShape;
+      uniform vec2 uResolution;
+      void main() {
+        float a = uOpacity;
+        if (uHole.z > 0.0) {
+          /* in screen-height units from the window's centre (y down) */
+          vec2 p = vec2(gl_FragCoord.x / uResolution.x, 1.0 - gl_FragCoord.y / uResolution.y);
+          vec2 d = (p - uHole.xy) * vec2(uResolution.x / uResolution.y, 1.0);
+          /* into the oval's own axes (untilted), then squashed to a circle */
+          float c = cos(uHoleShape.y);
+          float s = sin(uHoleShape.y);
+          d = vec2(c * d.x + s * d.y, -s * d.x + c * d.y);
+          d.x /= max(uHoleShape.x, 0.01);
+          /* a soft edge about a pixel wide (measured across the short side) */
+          float px = 1.0 / (uResolution.y * min(uHoleShape.x, 1.0));
+          float cover = smoothstep(uHole.z - px, uHole.z + px, length(d));
+          if (cover <= 0.0) discard;
+          a *= cover;
+        }
+        gl_FragColor = vec4(vec3(a), a);
+      }
     `,
     blending: THREE.NoBlending,
     depthTest: false,
@@ -157,8 +200,12 @@ export const createBand = (initiallyShown: boolean) => {
     setShown: (value: boolean) => {
       shown = value
     },
-    update: (dt: number, shape: BandShape) => {
-      layout(shape)
+    update: (dt: number, shape: BandShape, hole: BandHole | null = null) => {
+      layout(shape, hole)
+      if (hole) {
+        uniforms.uHole.value.set(hole.x, hole.y, Math.max(hole.radius, 1e-4))
+        uniforms.uHoleShape.value.set(hole.stretch, THREE.MathUtils.degToRad(hole.tilt))
+      } else uniforms.uHole.value.set(0, 0, 0)
       t = THREE.MathUtils.clamp(t + (shown ? dt : -dt) / DURATION, 0, 1)
       const e = smooth(t)
       uniforms.uOpacity.value = e
@@ -170,6 +217,7 @@ export const createBand = (initiallyShown: boolean) => {
         band before the shadow falls on both (see screenText.ts) */
     render: (renderer: THREE.WebGLRenderer, world: THREE.Scene, view: THREE.Camera, shadow: BandShadow, decorate?: () => void) => {
       if (t <= 0) return
+      renderer.getDrawingBufferSize(uniforms.uResolution.value)
       renderer.render(scene, camera)
       decorate?.()
       renderShadow(renderer, world, view, shadow, uniforms.uOpacity.value)

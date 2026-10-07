@@ -3,17 +3,18 @@ import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js'
 import { loadCharacter, type ArmChain, type CharacterRig, type HandRig, type TextureBorrow } from './character'
 import { createBand, writeBandStencil, type BandShape } from './band'
 import { createDigit } from './digit'
+import { createRingText } from './ringText'
 import { createScreenText } from './screenText'
-import { FIGURE, FIGURE_LAB } from './figure'
+import { FIGURE, FIGURE_LAB, type Figure } from './figure'
 import { solveTwoBoneIK } from './ik'
 import { POSE } from './pose'
 import { PALETTE, createGrade, createToonGradient } from './toon'
 import type { Motion } from './wind'
 import { stageScale } from '../../utils/stage'
 
-/* The character on its own for the figure lab: no card, lanyard or band,
-   posed entirely from FIGURE (figure.ts) and drawn with the same look as
-   the careers scene (POSE.overlay / POSE.shading). */
+/* The character on its own: no card or lanyard, posed entirely from a
+   figure config (FIGURE / CREDITS_FIGURE, figure.ts) and drawn with the
+   same look as the careers scene (POSE.overlay / POSE.shading). */
 
 export type FigureSceneOptions = {
   modelSrc: string
@@ -22,17 +23,23 @@ export type FigureSceneOptions = {
   brightMaterials?: RegExp
   unshadedMaterials?: RegExp
   borrowTextures?: TextureBorrow[]
-  /** the big white band behind him (FIGURE.band), cut out wherever he's
-      drawn and catching his shadow (FIGURE.shadow) */
+  /** the pose and look to read every frame (default FIGURE; /credits has
+      CREDITS_FIGURE) */
+  figure?: Figure
+  /** the big white band behind him (figure.band), cut out wherever he's
+      drawn and catching his shadow (figure.shadow) */
   band?: boolean
-  /** band only: a fixed shape instead of FIGURE.band (the page's own) */
+  /** band only: a fixed shape instead of figure.band (the page's own) */
   bandShape?: BandShape
   /** band only: slides it in once he's loaded, as a page's band does on
       arrival — unless the previous scene's last frame is covering, which
       already shows one */
   bandIn?: boolean
-  /** band only: huge menu-name type on the band, behind him (FIGURE.title) */
+  /** band only: huge menu-name type on the band, behind him (figure.title) */
   title?: string
+  /** band only: the band fills the screen round a round window instead
+      (figure.circle), with this text wrapped round it in place of `title` */
+  ring?: string
 }
 
 const deg = THREE.MathUtils.degToRad
@@ -48,11 +55,12 @@ type Leg = { lift: number; spread: number; twist: number; knee: number }
    ghost copy, which would otherwise pop in empty (same as scene.ts) */
 let handoff: { frame: HTMLCanvasElement; at: number } | null = null
 const HANDOFF_TTL = 1000
-/* the fall loop's clock (FIGURE.fall), kept across mounts so moving to
+/* the fall loop's clock (figure.fall), kept across mounts so moving to
    another page with him on it carries on mid-fall instead of restarting */
 let fallT = 0
 
 export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions) => {
+  const fig = options.figure ?? FIGURE
   const width = Math.max(mount.clientWidth, 1)
   const height = Math.max(mount.clientHeight, 1)
 
@@ -70,8 +78,12 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
   }
   const slideIn = !!options.bandIn && !taken
   const band = options.band ? createBand(!slideIn) : null
-  const title = band && options.title ? createScreenText(options.title) : null
-  const drawTitle = () => title?.render(renderer, FIGURE.title)
+  const ring = band && options.ring ? createRingText(options.ring) : null
+  const title = band && options.title && !ring ? createScreenText(options.title) : null
+  const drawTitle = () => {
+    title?.render(renderer, fig.title)
+    ring?.render(renderer, fig.circle, fig.circle)
+  }
   const effect = new OutlineEffect(renderer, { defaultThickness: 0.0045, defaultColor: PALETTE.outline })
   /* frames are composed from two passes (him, then the band), cleared once by hand */
   renderer.autoClear = false
@@ -80,7 +92,7 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
   grade.setHeight(renderer.domElement.height)
 
   const scene = new THREE.Scene()
-  const camera = new THREE.PerspectiveCamera(FIGURE.camera.fov, width / height, 0.05, 80)
+  const camera = new THREE.PerspectiveCamera(fig.camera.fov, width / height, 0.05, 80)
   scene.add(new THREE.AmbientLight(PALETTE.shadowLight, 0.9))
   const key = new THREE.DirectionalLight(PALETTE.keyLight, 2)
   key.position.set(-1.4, 2.4, 2.6)
@@ -89,7 +101,7 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
   rim.position.set(2, 1.4, -1.6)
   scene.add(rim)
 
-  /* body: sits at FIGURE.body.pos and turns about it; feet: the
+  /* body: sits at body.pos and turns about it; feet: the
      character's own frame (origin at the feet), hung `pivot` below */
   const body = new THREE.Group()
   const feet = new THREE.Group()
@@ -167,11 +179,11 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
   const shadeLight = new THREE.Vector3()
   const gravityDir = new THREE.Vector3()
   const motion: Motion = {
-    wind: FIGURE.wind,
+    wind: fig.wind,
     body: bodyQ,
     gravity: { direction: gravityDir, strength: 0 },
-    accessories: FIGURE.accessories,
-    hair: FIGURE.hair,
+    accessories: fig.accessories,
+    hair: fig.hair,
   }
 
   /* a neck/head turn in character-space degrees, as the world-space
@@ -211,7 +223,7 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
 
   let floatT = 0
   /* the face as posed, plus the automatic blink */
-  const face = { ...FIGURE.face }
+  const face = { ...fig.face }
   let last = performance.now()
 
   const tick = (now: number) => {
@@ -228,7 +240,7 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
       material.userData.outlineParameters = { visible: ov.outline === 'all' || bright, thickness: ov.outlineWidth }
     }
 
-    const cam = FIGURE.camera
+    const cam = fig.camera
     camera.position.copy(cam.pos)
     camera.lookAt(cam.target)
     camera.rotateZ(deg(cam.roll))
@@ -241,8 +253,8 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
 
     /* body orientation, plus the float: a drift along its direction and a
        slow wobble on two axes */
-    const b = FIGURE.body
-    const fl = FIGURE.float
+    const b = fig.body
+    const fl = fig.float
     const phase = floatT * fl.speed * Math.PI * 2
     const wobble = deg(fl.sway)
     bodyEuler.set(deg(b.pitch) + Math.sin(phase * 0.7 + 1) * wobble, deg(b.turn), deg(b.roll) + Math.sin(phase) * wobble)
@@ -251,7 +263,7 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
     drift.copy(fl.direction)
     if (drift.lengthSq() > 1e-8) drift.normalize()
     body.position.copy(b.pos).addScaledVector(drift, Math.sin(phase) * fl.distance)
-    const fa = FIGURE.fall
+    const fa = fig.fall
     if (fa.on && fa.duration > 0) {
       /* top to bottom of the frame at his depth: half its height there,
          plus the margin that takes the whole body out of sight */
@@ -273,16 +285,16 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
       rig.cardArm.hand.scale.setScalar(1)
       rig.update(dt)
       body.updateMatrixWorld(true)
-      legDelta(hipQ[0], kneeQ[0], FIGURE.legs.left, 1)
-      legDelta(hipQ[1], kneeQ[1], FIGURE.legs.right, -1)
-      rig.bend(lookDelta(spineQ, FIGURE.spine), hipQ, kneeQ)
-      rig.look(lookDelta(neckQ, FIGURE.neck), lookDelta(headQ, FIGURE.head))
-      poseArm(rig.cardArm, FIGURE.leftArm)
-      poseArm(rig.otherArm, FIGURE.rightArm)
-      poseHand(rig.cardHand, FIGURE.leftHand, FIGURE.leftFingers)
-      poseHand(rig.otherHand, FIGURE.rightHand, FIGURE.rightFingers)
-      Object.assign(face, FIGURE.face)
-      const { blinkEvery, blinkTime } = FIGURE.face
+      legDelta(hipQ[0], kneeQ[0], fig.legs.left, 1)
+      legDelta(hipQ[1], kneeQ[1], fig.legs.right, -1)
+      rig.bend(lookDelta(spineQ, fig.spine), hipQ, kneeQ)
+      rig.look(lookDelta(neckQ, fig.neck), lookDelta(headQ, fig.head))
+      poseArm(rig.cardArm, fig.leftArm)
+      poseArm(rig.otherArm, fig.rightArm)
+      poseHand(rig.cardHand, fig.leftHand, fig.leftFingers)
+      poseHand(rig.otherHand, fig.rightHand, fig.rightFingers)
+      Object.assign(face, fig.face)
+      const { blinkEvery, blinkTime } = fig.face
       if (blinkEvery > 0) {
         /* shut and open again over blinkTime, at the start of every period */
         const phase = (floatT % Math.max(blinkEvery, blinkTime)) / Math.max(blinkTime, 0.01)
@@ -290,22 +302,22 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
         face.blinkL = Math.max(face.blinkL, shut)
         face.blinkR = Math.max(face.blinkR, shut)
       }
-      rig.face?.apply(face, FIGURE.facial)
-      gravityDir.copy(FIGURE.gravity.direction)
-      motion.gravity!.strength = FIGURE.gravity.strength
+      rig.face?.apply(face, fig.facial)
+      gravityDir.copy(fig.gravity.direction)
+      motion.gravity!.strength = fig.gravity.strength
       rig.postUpdate(motionDt, motion)
-      const d = FIGURE.digit
+      const d = fig.digit
       digit.update(motionDt, d, d.hold === 'right' ? rig.otherArm.hand : d.hold === 'left' ? rig.cardArm.hand : null)
     }
 
-    band?.update(dt, options.bandShape ?? FIGURE.band)
+    band?.update(dt, options.bandShape ?? fig.band, ring ? fig.circle : null)
     renderFrame()
   }
   const renderFrame = () => {
     renderer.clear()
     effect.render(scene, camera)
     /* not before he's there to cut his hole */
-    if (ready) band?.render(renderer, scene, camera, FIGURE.shadow, drawTitle)
+    if (ready) band?.render(renderer, scene, camera, fig.shadow, drawTitle)
   }
   renderer.setAnimationLoop(tick)
 
@@ -340,6 +352,7 @@ export const mountFigureScene = (mount: HTMLElement, options: FigureSceneOptions
     resize.disconnect()
     band?.dispose()
     title?.dispose()
+    ring?.dispose()
     digit.dispose()
     rig?.dispose()
     gradient.dispose()

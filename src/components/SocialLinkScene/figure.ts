@@ -1,11 +1,12 @@
 import * as THREE from 'three'
-import { poseToJson } from './pose'
+import { applyPose, poseToJson } from './pose'
 import type { DigitConfig } from './digit'
 
 const v3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
 
-/** The character alone (no card, no band) for the figure lab
-    (`/figure-lab` and the /credits background, lab via `/credits?lab`):
+/** The character alone (no card) for the figure lab (`/figure-lab`) and
+    the BUILD / STUDY / ABOUT / LINKS backdrop (falling with the "9"; lab
+    via `?lab`) — /credits has its own pose, CREDITS_FIGURE below:
     whole-body orientation, floating, gravity on
     the hair and cloth, both arms, the face and the ribbon/cord. Mutable like
     POSE — the lab edits it live and copies it out as JSON. The look (colour
@@ -180,6 +181,32 @@ export const FIGURE = {
     slant: 12,
     color: '#a9a9ad',
   },
+  /* /builds: instead of the strip, the band fills the screen round a big
+     round window onto the video (the system menu's circle), with the page
+     name in huge type wrapped round its edge (see BandHole, ringText.ts) */
+  circle: {
+    /* centre, screen fractions (x from the left, y from the top) */
+    x: 0.885,
+    y: 0.02,
+    /* fraction of the screen height (the vertical half-axis) */
+    radius: 0.665,
+    /* oval: width over height (1 = circle), and its tilt (°, + = clockwise) */
+    stretch: 1.46,
+    tilt: 1,
+    /* the type round it (see RingTextStyle): size (× screen height), its
+       inner side from the edge (screen heights, - = under the window),
+       flip (tops outward, reading clockwise), where the first letter sits
+       (° round the centre: 0 right, 90 below, 180 left, - = above), letter
+       gap (px), squeeze and colour. Round the lower left of the window in
+       the top right corner, the detail panel inside it on the video */
+    size: 0.295,
+    offset: 0.005,
+    flip: false,
+    start: 153.5,
+    spacing: 4,
+    squeeze: 0.85,
+    color: '#000000',
+  },
   /* hair strands styled on top of their modelled shape, in face space
      (follows the head), degrees spread over each strand: lift + = away
      from the head (front ones off the face), sweep + = toward his left,
@@ -221,3 +248,53 @@ export const FIGURE_LAB = {
 
 /** the values as written in this file, for the lab's reset */
 export const DEFAULT_FIGURE = poseToJson(FIGURE)
+
+/* a separate copy (fresh vectors and arrays) to pose on its own */
+const copy = <T>(value: T): T => {
+  if (value instanceof THREE.Vector3) return value.clone() as T
+  if (Array.isArray(value)) return value.map(copy) as T
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, copy(v)])) as T
+  }
+  return value
+}
+
+/** /credits: Makoto lying back in mid-air, floating in place (no fall, no
+    "9") — FIGURE's layout with these values; lab via `/credits?lab` */
+export const CREDITS_FIGURE: Figure = copy(FIGURE)
+applyPose(
+  {
+    camera: { pos: [-0.2, -1, 3.78], target: [0, 0.67, 0.245], roll: 71, fov: 12 },
+    body: { pivot: 0.4, turn: 67, pitch: -151, roll: -33, pos: [0.175, 1.51, 1.2] },
+    float: { direction: [0, 1, 0], distance: 0.02, speed: 0.25, sway: 1.5 },
+    fall: { on: false },
+    gravity: { direction: [-1, 0.2, -0.75], strength: 0.73 },
+    spine: { pitch: 25.5, yaw: -40, roll: 0 },
+    legs: {
+      left: { lift: 112.5, spread: 0, twist: 2, knee: 14 },
+      right: { lift: 89, spread: 0.5, twist: 5.5, knee: 7.5 },
+    },
+    neck: { pitch: -15.5, yaw: -18, roll: 0 },
+    head: { pitch: 0, yaw: -18, roll: 0 },
+    face: { gazeYaw: -7.25 },
+    leftArm: { hand: [0.3, 0.6, 0.05], elbowAngle: 160, pole: [0.3, 0, -0.8] },
+    leftHand: { bend: 0, side: 0, twist: 0 },
+    leftFingers: { curl: [0.2, 0.2, 0.2], thumb: 0.05, extra: [0, 0.03, 0.06, 0.1] },
+    rightArm: { hand: [-0.25, 0.68, 0.035], elbowAngle: 71, pole: [-0.3, 0, -0.8] },
+    rightHand: { bend: -4, side: 0, twist: -25 },
+    rightFingers: { curl: [0.78, 0.93, 1.02], thumb: 0.05, extra: [0, 0.03, 0.06, 0.1] },
+    wind: { gust: 0.38, tipBoost: 2.55, coat: 0 },
+    accessories: { earphone: { amount: 1, swing: 3, speed: 0.5, gravity: 0 } },
+    hair: {
+      front: { lift: 45.5, sweep: -40, wind: 1.3 },
+      frontRight: { lift: -45, sweep: 17, wind: 2.15 },
+      frontLeft: { lift: -45, sweep: 62, wind: 2.15 },
+      back: { lift: -7, sweep: -7, wind: 2.2 },
+    },
+    digit: { show: false },
+  },
+  CREDITS_FIGURE,
+)
+
+/** CREDITS_FIGURE as written here, for its lab's reset */
+export const DEFAULT_CREDITS_FIGURE = poseToJson(CREDITS_FIGURE)

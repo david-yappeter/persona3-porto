@@ -32,10 +32,10 @@ const MAKOTO_FILES = [
   'textures/katana744_b.002_baseColor.png',
 ]
 
-/* row heads, card logos and detail portraits, straight from the data so a
+/* row heads, card logos and detail bust-ups, straight from the data so a
    new entry is covered without touching this list */
 const EXPERIENCE_IMAGES = [
-  ...new Set(EXPERIENCE.flatMap((e) => [e.headSrc, e.logoSrc, e.portraitSrc]).filter((u): u is string => !!u)),
+  ...new Set(EXPERIENCE.flatMap((e) => [e.headSrc, e.logoSrc, e.bustupSrc]).filter((u): u is string => !!u)),
 ]
 
 /*
