@@ -16,7 +16,7 @@ const open = (url?: string) => {
 
 /** /credits: who made what the site is built from, as a P3R equip-menu
     style list over Makoto floating on the big white band (posed by FIGURE,
-    figure.ts). Dev: /credits?lab adds the figure lab panel. */
+    figure.ts). /credits?lab adds the figure lab panel. */
 export const Credits = () => {
   const mountRef = useRef<HTMLDivElement>(null)
   const { selected, moveTo } = useMenuNavigation(CREDITS.length)
@@ -35,11 +35,11 @@ export const Credits = () => {
       /* huge grey page name on the band, behind him (FIGURE.title) */
       title: 'CREDITS',
     })
-    /* dev-only figure lab (stripped from production builds) */
+    /* figure lab — public, for reference; its code only downloads when asked for */
     let disposeLab: (() => void) | undefined
     let cancelled = false
     const query = new URLSearchParams(window.location.search)
-    if (import.meta.env.DEV && (query.has('lab') || query.has('labs'))) {
+    if (query.has('lab') || query.has('labs')) {
       void import('../../components/SocialLinkScene/figureLab').then((m) => {
         if (!cancelled) disposeLab = m.mountFigureLab()
       })

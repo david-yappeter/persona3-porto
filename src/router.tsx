@@ -33,10 +33,8 @@ export const router = createBrowserRouter(
         { path: 'about', Component: About },
         { path: 'links', Component: Links },
         { path: 'credits', lazy: () => import('./pages/Credits').then((m) => ({ Component: m.Credits })) },
-        /* dev-only figure lab: the character alone with a slider panel */
-        ...(import.meta.env.DEV
-          ? [{ path: 'figure-lab', lazy: () => import('./pages/FigureLab').then((m) => ({ Component: m.FigureLab })) }]
-          : []),
+        /* figure lab: the character alone with a slider panel (public, for reference) */
+        { path: 'figure-lab', lazy: () => import('./pages/FigureLab').then((m) => ({ Component: m.FigureLab })) },
       ],
     },
   ],

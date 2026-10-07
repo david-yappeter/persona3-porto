@@ -7,7 +7,7 @@ import '../../components/SocialLinkScene/SocialLinkScene.css'
 
 const OCEAN_BG = `${import.meta.env.BASE_URL}assets/persona_3_menu_bg_ocean_seamless.mp4`
 
-/** dev-only (/figure-lab): the character alone over the menu video, with
+/** /figure-lab: the character alone over the menu video, with
     the figure lab panel — body orientation, floating, gravity, face, arms,
     ribbon/cord (FIGURE in figure.ts) */
 export const FigureLab = () => {

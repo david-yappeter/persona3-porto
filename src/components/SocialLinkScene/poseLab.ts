@@ -1,7 +1,7 @@
 import { DEFAULT_POSE, LAB, POSE } from './pose'
 import { BODY_AXES, R, WORLD_AXES, createLabPanel, freeArm, look, vector } from './labGui'
 
-/* dev-only slider panel over the live scene (`/careers/0?lab`): every change
+/* slider panel over the live scene (`/careers/0?lab`): every change
    writes straight into POSE, survives reloads via localStorage, and "Copy
    config" puts the whole pose on the clipboard as JSON */
 

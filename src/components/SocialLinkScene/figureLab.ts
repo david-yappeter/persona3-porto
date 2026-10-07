@@ -2,7 +2,7 @@ import { DEFAULT_FIGURE, FIGURE, FIGURE_LAB } from './figure'
 import { R, WORLD_AXES, createLabPanel, freeArm, look, vector, type Range } from './labGui'
 import type { AccessoryMotion } from './wind'
 
-/* dev-only slider panel for the figure lab (`/figure-lab`, `/credits?lab`): the character
+/* slider panel for the figure lab (`/figure-lab`, `/credits?lab`): the character
    alone, every FIGURE value live; saved in localStorage, "Copy config"
    puts it on the clipboard as JSON */
 

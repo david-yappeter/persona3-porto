@@ -4,8 +4,8 @@ import { poseToJson } from './pose'
 const v3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
 
 /** The character alone (no card, no band) for the figure lab
-    (`/figure-lab` and the /credits background, lab via `/credits?lab` in
-    dev): whole-body orientation, floating, gravity on
+    (`/figure-lab` and the /credits background, lab via `/credits?lab`):
+    whole-body orientation, floating, gravity on
     the hair and cloth, both arms, the face and the ribbon/cord. Mutable like
     POSE — the lab edits it live and copies it out as JSON. The look (colour
     grade, outline, shading) is shared with POSE. Angles are degrees,
@@ -175,7 +175,7 @@ export const FIGURE = {
 
 export type Figure = typeof FIGURE
 
-/** dev-only switches, never part of the copied config */
+/** lab-only switches, never part of the copied config */
 export const FIGURE_LAB = {
   /* freezes the float drift and the cloth/hair motion */
   pause: false,

@@ -48,10 +48,11 @@ export const SkillLayout = () => {
   const detail = index !== undefined
   const [active, setActive] = useState(() => parseIndex(index) ?? 0)
 
-  /* dev-only pose lab: /careers?lab or /careers/0?lab adds a slider panel that
-     edits the character's pose live (stripped from production builds) */
+  /* pose lab: /careers?lab or /careers/0?lab adds a slider panel that edits
+     the character's pose live — public, for reference; its code only
+     downloads when asked for */
   useEffect(() => {
-    if (!import.meta.env.DEV || !new URLSearchParams(window.location.search).has('lab')) return
+    if (!new URLSearchParams(window.location.search).has('lab')) return
     let dispose: (() => void) | undefined
     let cancelled = false
     void import('../../components/SocialLinkScene/poseLab').then((m) => {

@@ -185,7 +185,7 @@ export const POSE = {
 
 export type Pose = typeof POSE
 
-/** dev-only switches, never part of the copied config */
+/** lab-only switches, never part of the copied config */
 export const LAB = {
   noParallax: false,
   /* overrides the page's cardState while previewing */
