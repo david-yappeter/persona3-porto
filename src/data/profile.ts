@@ -20,6 +20,22 @@ export type Project = {
 
 export const PROJECTS: Project[] = [
   {
+    tag: 'Web',
+    title: 'Persona Portfolio',
+    summary: 'This site, P3 Reload style',
+    stack: ['React', 'TypeScript', 'three.js', 'Vite'],
+    highlights: [
+      'Portfolio styled after the Persona 3 Reload menus, with a posed, toon-shaded 3D model.',
+      'Procedural hair / cloth wind, a falling-figure loop and live posing labs.',
+    ],
+    links: [
+      { label: 'Live', url: 'https://david-yappeter.github.io/persona3-porto/' },
+      { label: 'GitHub', url: 'https://github.com/david-yappeter/persona3-porto' },
+    ],
+    note: 'Add ?lab to a page (e.g. /builds?lab) for the posing tools.',
+    imageSrc: head(1),
+  },
+  {
     tag: 'Thesis',
     title: 'POS System',
     summary: 'Building-materials shop POS',
@@ -74,7 +90,7 @@ export const PROJECTS: Project[] = [
     highlights: ['Static HTML/CSS CV with an automated build.', 'Gulp minifies and processes assets; Puppeteer exports the matching PDF.'],
     links: [
       { label: 'Live', url: 'https://david-yappeter.github.io/CV/' },
-      { label: 'GitHub', url: 'http://github.com/david-yappeter/cv' },
+      { label: 'GitHub', url: 'https://github.com/david-yappeter/cv' },
     ],
     imageSrc: head(7),
   },

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MenuBackground } from '../../components/MenuBackground'
 import { MenuList } from '../../components/MenuList'
 import { MENU_ITEMS } from '../../data/menuItems'
@@ -17,8 +17,23 @@ const ENTRANCE_SRC = `${import.meta.env.BASE_URL}assets/persona_3_menu_bg_entran
 const landedOnHomeOnBoot = window.location.pathname === import.meta.env.BASE_URL
 let consumed = false
 
+/*
+ * The row the cursor was last on, so coming back from a submenu lands on the
+ * row that opened it rather than the top. Before any visit to the menu it's
+ * the row for the page the site was loaded on (a reload on "/careers/2",
+ * then Back, lands on CAREER).
+ */
+const bootPath = window.location.pathname.slice(import.meta.env.BASE_URL.length - 1)
+let lastSelected = Math.max(
+  MENU_ITEMS.findIndex((item) => item.to && (bootPath === item.to || bootPath.startsWith(`${item.to}/`))),
+  0,
+)
+
 export const MainMenu = () => {
-  const { selected, moveTo } = useMenuNavigation(MENU_ITEMS.length)
+  const { selected, moveTo } = useMenuNavigation(MENU_ITEMS.length, lastSelected)
+  useEffect(() => {
+    lastSelected = selected
+  }, [selected])
   const [playEntrance] = useState(() => {
     if (!landedOnHomeOnBoot || consumed) return false
     consumed = true
