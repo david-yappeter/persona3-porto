@@ -1,4 +1,4 @@
-/* everything on the BUILD / STUDY / ABOUT / LINKS pages, from the CV
+/* everything on the BUILD / LINKS pages, from the CV
    (david-yappeter.pdf) */
 
 const head = (n: number) => `${import.meta.env.BASE_URL}assets/head_row_${n}_colored.png`
@@ -80,56 +80,6 @@ export const PROJECTS: Project[] = [
   },
 ]
 
-export type Study = {
-  tag: string
-  school: string
-  program: string
-  period: string
-  facts: { label: string; value: string }[]
-  highlights: string[]
-  links: Link[]
-  imageSrc: string
-}
-
-export const STUDIES: Study[] = [
-  {
-    tag: 'Degree',
-    school: 'Universitas Mikroskil',
-    program: 'Bachelor of Computer Science',
-    period: '2020 - 2024',
-    facts: [
-      { label: 'GPA', value: '3.91 / 4.00' },
-      { label: 'Where', value: 'Medan, Indonesia' },
-    ],
-    highlights: ['Thesis: a full POS system for a building materials shop (see BUILD).'],
-    links: [{ label: 'Thesis demo', url: 'https://skripsi-setia-abadi.vercel.app/' }],
-    imageSrc: head(8),
-  },
-  {
-    tag: 'Cohort',
-    school: 'Bangkit Academy',
-    program: 'Mobile Development',
-    period: 'Aug 2023 - Jan 2024',
-    facts: [
-      { label: 'Led by', value: 'Google, Tokopedia, Gojek & Traveloka' },
-      { label: 'Track', value: 'Kampus Merdeka' },
-    ],
-    highlights: ['Mobile development path, finished with a team capstone project.'],
-    links: [{ label: 'Capstone repos', url: 'https://github.com/orgs/c23-m4001/repositories' }],
-    imageSrc: head(4),
-  },
-  {
-    tag: 'Cohort',
-    school: 'Dicoding Academy',
-    program: 'Front-End Web & Back-End',
-    period: 'Feb 2023 - Jun 2023',
-    facts: [{ label: 'Track', value: 'Kampus Merdeka · MSIB Batch 4' }],
-    highlights: ['Front-end web and back-end development path.'],
-    links: [],
-    imageSrc: head(3),
-  },
-]
-
 export type Contact = { tag: string; title: string; handle: string; url: string; imageSrc: string; blurb: string }
 
 export const CONTACTS: Contact[] = [
@@ -182,22 +132,3 @@ export const CONTACTS: Contact[] = [
     imageSrc: head(8),
   },
 ]
-
-export const PROFILE = {
-  name: 'David Yappeter',
-  role: 'Software Development Engineer',
-  location: 'Medan, Indonesia',
-  years: '5+',
-  summary:
-    'Backend developer with 5+ years of experience, specialising in Golang — scalable web applications and microservices. ' +
-    'Comfortable across REST/GraphQL APIs, SQL/NoSQL databases and containers, with front-end work in React and Next.js. ' +
-    'Track record in RAG chatbots, healthcare and retail systems.',
-  skills: [
-    { label: 'Languages', items: ['Go', 'Python', 'JavaScript / TypeScript', 'Node.js', 'Dart'] },
-    { label: 'Architecture', items: ['REST API', 'GraphQL', 'gRPC', 'Microservices'] },
-    { label: 'Databases', items: ['SQL', 'MongoDB', 'Redis'] },
-    { label: 'Front-end', items: ['React', 'Next.js'] },
-    { label: 'Domains', items: ['Chatbot RAG', 'Healthcare', 'Retail'] },
-    { label: 'Tools', items: ['AI Tools', 'Docker'] },
-  ],
-}

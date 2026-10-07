@@ -5,7 +5,7 @@ import type { DigitConfig } from './digit'
 const v3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z)
 
 /** The character alone (no card) for the figure lab (`/figure-lab`) and
-    the BUILD / STUDY / ABOUT / LINKS backdrop (falling with the "9"; lab
+    the BUILD / LINKS backdrop (falling with the "9"; lab
     via `?lab`) — /credits has its own pose, CREDITS_FIGURE below:
     whole-body orientation, floating, gravity on
     the hair and cloth, both arms, the face and the ribbon/cord. Mutable like
@@ -168,11 +168,12 @@ export const FIGURE = {
   /* the huge grey page name on the band (/credits' "CREDITS", like the
      equip menu's "EQUIP"), behind him and under his shadow */
   title: {
-    /* left edge and baseline, screen fractions (x from the left, y from the top) */
-    x: 0.06,
+    /* left edge and baseline, screen fractions (x from the left, y from the
+       top) — on /links, just inside the band's left edge */
+    x: 0.375,
     y: 0.975,
-    /* font size, fraction of the screen height */
-    size: 0.3,
+    /* font size, fraction of the screen height (CONTACTS fits the band) */
+    size: 0.23,
     /* 1 = as drawn, < 1 = condensed */
     squeeze: 0.72,
     /* gap between letters, CSS px */

@@ -22,5 +22,6 @@ const ENTRIES: ListEntry[] = CONTACTS.map((c) => ({
   ),
 }))
 
-/** LINKS: where to find / reach me; a click (or Enter) opens the link */
-export const Links = () => <ListDetailPage title="LINKS" entries={ENTRIES} openOnClick />
+/** LINKS: where to find / reach me, "CONTACTS" on the band; a click (or
+    Enter) opens the link */
+export const Links = () => <ListDetailPage title="CONTACTS" entries={ENTRIES} openOnClick />

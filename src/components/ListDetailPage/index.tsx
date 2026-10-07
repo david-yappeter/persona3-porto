@@ -40,7 +40,7 @@ type ListDetailPageProps = {
 }
 
 /**
- * P3R equip-menu layout shared by BUILD / STUDY / LINKS: BasicRow list down
+ * P3R equip-menu layout shared by BUILD / LINKS: BasicRow list down
  * the left (arrows / hover move the cursor), the selected row's detail on a
  * white diagonal band to the right with the page name in huge grey type
  * on it, and Makoto falling through (band and name are drawn with him, by
